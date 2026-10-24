@@ -2,7 +2,7 @@ from enum import Enum
 import json
 from typing import ClassVar, Optional, Union
 
-from PyQt5.QtCore import QFile, QObject, QRect, QRectF, QSize, Qt
+from PyQt5.QtCore import QByteArray, QFile, QObject, QRect, QRectF, QSize, Qt
 from PyQt5.QtGui import QColor, QFont, QFontDatabase, QIcon, QIconEngine, QImage, QPainter, QPainterPath, QPixmap
 from PyQt5.QtSvg import QSvgRenderer
 from PyQt5.QtWidgets import QAction, QApplication
@@ -143,7 +143,7 @@ def getIconColor(theme: Theme = Theme.AUTO, reverse: bool = False) -> str:
     return color
 
 
-def drawSvgIcon(icon, painter: QPainter, rect: Union[QRect, QRectF]) -> None:
+def drawSvgIcon(icon: Union[str, bytes, QByteArray], painter: QPainter, rect: Union[QRect, QRectF]) -> None:
     """draw svg icon
 
     Parameters
@@ -276,7 +276,7 @@ class FluentIconBase:
         color = QColor(color).name()
         return QIcon(SvgIconEngine(writeSvg(path, fill=color)))
 
-    def colored(self, lightColor: QColor, darkColor: QColor) -> "ColoredFluentIcon":
+    def colored(self, lightColor: QColor, darkColor: QColor) -> "FluentIconBase":
         """create a colored fluent icon
 
         Parameters
@@ -374,7 +374,7 @@ class FluentFontIconBase(FluentIconBase):
 
         return QIcon(FontIconEngine(self.fontFamily, self.char, color, self.isBold))
 
-    def colored(self, lightColor: QColor, darkColor: QColor):
+    def colored(self, lightColor: QColor, darkColor: QColor) -> "FluentIconBase":
         self.lightColor = QColor(lightColor)
         self.darkColor = QColor(darkColor)
         return self
