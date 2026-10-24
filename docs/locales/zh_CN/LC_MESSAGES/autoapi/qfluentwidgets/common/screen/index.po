@@ -48,7 +48,7 @@ msgstr ""
 msgid ""
 ":py:obj:`getCurrentScreenGeometry "
 "<qfluentwidgets.common.screen.getCurrentScreenGeometry>`\\ "
-"\\(\\[avaliable\\]\\)"
+"\\(\\[available\\]\\)"
 msgstr ""
 
 #: ../../source/autoapi/qfluentwidgets/common/screen/index.rst:27
