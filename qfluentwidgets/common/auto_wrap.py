@@ -1,7 +1,7 @@
 from enum import auto, Enum
 from functools import lru_cache
 from re import sub
-from typing import ClassVar, Dict, List, Optional, Tuple
+from typing import Any, ClassVar, Dict, Generator, List, Optional, Tuple
 from unicodedata import east_asian_width
 
 
@@ -60,7 +60,7 @@ class TextWrap:
         return [token[i : i + width] for i in range(0, len(token), width)]
 
     @classmethod
-    def tokenizer(cls, text: str):
+    def tokenizer(cls, text: str) -> Generator[str, Any, None]:
         """tokenize line"""
 
         buffer = ""
@@ -107,8 +107,8 @@ class TextWrap:
         is_wrapped = False
         wrapped_lines = []
 
-        for line in lines:
-            line = cls.process_text_whitespace(line)
+        for raw_line in lines:
+            line = cls.process_text_whitespace(raw_line)
 
             if cls.get_text_width(line) > width:
                 wrapped_line, is_wrapped = cls._wrap_line(line, width, once)
@@ -149,8 +149,7 @@ class TextWrap:
 
                 chunks = cls.split_long_token(token, width)
 
-                for chunk in chunks[:-1]:
-                    wrapped_lines.append(chunk.rstrip())
+                wrapped_lines.extend(chunk.rstrip() for chunk in chunks[:-1])
 
                 line_buffer = chunks[-1]
                 current_width = cls.get_text_width(chunks[-1])
