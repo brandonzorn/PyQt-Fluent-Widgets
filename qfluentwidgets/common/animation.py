@@ -1,74 +1,88 @@
-# coding: utf-8
 from enum import Enum
-from PyQt5.QtCore import QEasingCurve, QEvent, QObject, QPropertyAnimation, pyqtProperty, pyqtSignal, QPoint, QPointF, QRect, QRectF, QParallelAnimationGroup, QSequentialAnimationGroup, Qt
-from PyQt5.QtGui import QMouseEvent, QEnterEvent, QColor
-from PyQt5.QtWidgets import QWidget, QLineEdit, QGraphicsDropShadowEffect
+from typing import Any, ClassVar, Dict, Optional
+
+from PyQt5.QtCore import (
+    pyqtProperty,
+    pyqtSignal,
+    QEasingCurve,
+    QEvent,
+    QObject,
+    QParallelAnimationGroup,
+    QPoint,
+    QPointF,
+    QPropertyAnimation,
+    QRect,
+    QRectF,
+    QSequentialAnimationGroup,
+    Qt,
+)
+from PyQt5.QtGui import QColor, QEnterEvent, QMouseEvent
+from PyQt5.QtWidgets import QGraphicsDropShadowEffect, QLineEdit, QWidget
 
 from .config import qconfig
 
 
 class AnimationBase(QObject):
-    """ Animation base class """
+    """Animation base class"""
 
-    def __init__(self, parent: QWidget):
+    def __init__(self, parent: QWidget) -> None:
         super().__init__(parent=parent)
         parent.installEventFilter(self)
 
-    def _onHover(self, e: QEnterEvent):
+    def _onHover(self, e: QEnterEvent) -> None:
         pass
 
-    def _onLeave(self, e: QEvent):
+    def _onLeave(self, e: QEvent) -> None:
         pass
 
-    def _onPress(self, e: QMouseEvent):
+    def _onPress(self, e: QMouseEvent) -> None:
         pass
 
-    def _onRelease(self, e: QMouseEvent):
+    def _onRelease(self, e: QMouseEvent) -> None:
         pass
 
-    def eventFilter(self, obj, e: QEvent):
+    def eventFilter(self, obj, e: QEvent) -> bool:
         if obj is self.parent():
-            if e.type() == QEvent.MouseButtonPress:
+            if e.type() == QEvent.Type.MouseButtonPress:
                 self._onPress(e)
-            elif e.type() == QEvent.MouseButtonRelease:
+            elif e.type() == QEvent.Type.MouseButtonRelease:
                 self._onRelease(e)
-            elif e.type() == QEvent.Enter:
+            elif e.type() == QEvent.Type.Enter:
                 self._onHover(e)
-            elif e.type() == QEvent.Leave:
+            elif e.type() == QEvent.Type.Leave:
                 self._onLeave(e)
 
         return super().eventFilter(obj, e)
 
 
 class TranslateYAnimation(AnimationBase):
-
     valueChanged = pyqtSignal(float)
 
-    def __init__(self, parent: QWidget, offset=2):
+    def __init__(self, parent: QWidget, offset: int = 2) -> None:
         super().__init__(parent)
         self._y = 0
         self.maxOffset = offset
-        self.ani = QPropertyAnimation(self, b'y', self)
+        self.ani = QPropertyAnimation(self, b"y", self)
 
     @pyqtProperty(float)
-    def y(self):
+    def y(self) -> float:
         return self._y
 
     @y.setter
-    def y(self, y):
+    def y(self, y: float) -> None:
         self._y = y
         self.parent().update()
         self.valueChanged.emit(y)
 
-    def _onPress(self, e):
-        """ arrow down """
+    def _onPress(self, e: QMouseEvent) -> None:
+        """arrow down"""
         self.ani.setEndValue(self.maxOffset)
         self.ani.setEasingCurve(QEasingCurve.OutQuad)
         self.ani.setDuration(150)
         self.ani.start()
 
-    def _onRelease(self, e):
-        """ arrow up """
+    def _onRelease(self, e: QMouseEvent) -> None:
+        """arrow up"""
         self.ani.setEndValue(0)
         self.ani.setDuration(500)
         self.ani.setEasingCurve(QEasingCurve.OutElastic)
@@ -76,68 +90,66 @@ class TranslateYAnimation(AnimationBase):
 
 
 class BackgroundAnimationWidget:
-    """ Background animation widget """
+    """Background animation widget"""
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.isHover = False
         self.isPressed = False
         self.bgColorObject = BackgroundColorObject(self)
-        self.backgroundColorAni = QPropertyAnimation(
-            self.bgColorObject, b'backgroundColor', self)
+        self.backgroundColorAni = QPropertyAnimation(self.bgColorObject, b"backgroundColor", self)
         self.backgroundColorAni.setDuration(120)
         self.installEventFilter(self)
 
         qconfig.themeChanged.connect(self._updateBackgroundColor)
 
-    def eventFilter(self, obj, e):
-        if obj is self:
-            if e.type() == QEvent.Type.EnabledChange:
-                if self.isEnabled():
-                    self.setBackgroundColor(self._normalBackgroundColor())
-                else:
-                    self.setBackgroundColor(self._disabledBackgroundColor())
+    def eventFilter(self, obj, e: QEvent) -> bool:
+        if obj is self and e.type() == QEvent.Type.EnabledChange:
+            if self.isEnabled():
+                self.setBackgroundColor(self._normalBackgroundColor())
+            else:
+                self.setBackgroundColor(self._disabledBackgroundColor())
 
         return super().eventFilter(obj, e)
 
-    def mousePressEvent(self, e):
+    def mousePressEvent(self, e: QMouseEvent) -> None:
         self.isPressed = True
         self._updateBackgroundColor()
         super().mousePressEvent(e)
 
-    def mouseReleaseEvent(self, e):
+    def mouseReleaseEvent(self, e: QMouseEvent) -> None:
         self.isPressed = False
         self._updateBackgroundColor()
         super().mouseReleaseEvent(e)
 
-    def enterEvent(self, e):
+    def enterEvent(self, e) -> None:
         self.isHover = True
         self._updateBackgroundColor()
 
-    def leaveEvent(self, e):
+    def leaveEvent(self, e) -> None:
         self.isHover = False
         self._updateBackgroundColor()
 
-    def focusInEvent(self, e):
+    def focusInEvent(self, e) -> None:
         super().focusInEvent(e)
         self._updateBackgroundColor()
 
-    def _normalBackgroundColor(self):
+    def _normalBackgroundColor(self) -> QColor:
         return QColor(0, 0, 0, 0)
 
-    def _hoverBackgroundColor(self):
+    def _hoverBackgroundColor(self) -> QColor:
         return self._normalBackgroundColor()
 
-    def _pressedBackgroundColor(self):
+    def _pressedBackgroundColor(self) -> QColor:
         return self._normalBackgroundColor()
 
-    def _focusInBackgroundColor(self):
+    def _focusInBackgroundColor(self) -> QColor:
         return self._normalBackgroundColor()
 
-    def _disabledBackgroundColor(self):
+    def _disabledBackgroundColor(self) -> QColor:
         return self._normalBackgroundColor()
 
-    def _updateBackgroundColor(self):
+    def _updateBackgroundColor(self) -> None:
         if not self.isEnabled():
             color = self._disabledBackgroundColor()
         elif isinstance(self, QLineEdit) and self.hasFocus():
@@ -153,38 +165,43 @@ class BackgroundAnimationWidget:
         self.backgroundColorAni.setEndValue(color)
         self.backgroundColorAni.start()
 
-    def getBackgroundColor(self):
+    def getBackgroundColor(self) -> QColor:
         return self.bgColorObject.backgroundColor
 
-    def setBackgroundColor(self, color: QColor):
+    def setBackgroundColor(self, color: QColor) -> None:
         self.bgColorObject.backgroundColor = color
 
     @property
-    def backgroundColor(self):
+    def backgroundColor(self) -> QColor:
         return self.getBackgroundColor()
 
 
 class BackgroundColorObject(QObject):
-    """ Background color object """
+    """Background color object"""
 
-    def __init__(self, parent: BackgroundAnimationWidget):
+    def __init__(self, parent: BackgroundAnimationWidget) -> None:
         super().__init__(parent)
         self._backgroundColor = parent._normalBackgroundColor()
 
     @pyqtProperty(QColor)
-    def backgroundColor(self):
+    def backgroundColor(self) -> QColor:
         return self._backgroundColor
 
     @backgroundColor.setter
-    def backgroundColor(self, color: QColor):
+    def backgroundColor(self, color: QColor) -> None:
         self._backgroundColor = color
         self.parent().update()
 
 
 class DropShadowAnimation(QPropertyAnimation):
-    """ Drop shadow animation """
+    """Drop shadow animation"""
 
-    def __init__(self, parent: QWidget, normalColor=QColor(0, 0, 0, 0), hoverColor=QColor(0, 0, 0, 75)):
+    def __init__(
+        self,
+        parent: QWidget,
+        normalColor: QColor = QColor(0, 0, 0, 0),
+        hoverColor: QColor = QColor(0, 0, 0, 75),
+    ) -> None:
         super().__init__(parent=parent)
         self.normalColor = normalColor
         self.hoverColor = hoverColor
@@ -197,22 +214,22 @@ class DropShadowAnimation(QPropertyAnimation):
 
         parent.installEventFilter(self)
 
-    def setBlurRadius(self, radius: int):
+    def setBlurRadius(self, radius: int) -> None:
         self.blurRadius = radius
 
-    def setOffset(self, dx: int, dy: int):
+    def setOffset(self, dx: int, dy: int) -> None:
         self.offset = QPoint(dx, dy)
 
-    def setNormalColor(self, color: QColor):
+    def setNormalColor(self, color: QColor) -> None:
         self.normalColor = color
 
-    def setHoverColor(self, color: QColor):
+    def setHoverColor(self, color: QColor) -> None:
         self.hoverColor = color
 
-    def setColor(self, color):
+    def setColor(self, color: QColor) -> None:
         pass
 
-    def _createShadowEffect(self):
+    def _createShadowEffect(self) -> QGraphicsDropShadowEffect:
         self.shadowEffect = QGraphicsDropShadowEffect(self)
         self.shadowEffect.setOffset(self.offset)
         self.shadowEffect.setBlurRadius(self.blurRadius)
@@ -220,14 +237,14 @@ class DropShadowAnimation(QPropertyAnimation):
 
         self.setTargetObject(self.shadowEffect)
         self.setStartValue(self.shadowEffect.color())
-        self.setPropertyName(b'color')
+        self.setPropertyName(b"color")
         self.setDuration(150)
 
         return self.shadowEffect
 
-    def eventFilter(self, obj, e):
+    def eventFilter(self, obj, e) -> bool:
         if obj is self.parent() and self.parent().isEnabled():
-            if e.type() in [QEvent.Type.Enter]:
+            if e.type() == QEvent.Type.Enter:
                 self.isHover = True
 
                 if self.state() != QPropertyAnimation.State.Running:
@@ -244,21 +261,23 @@ class DropShadowAnimation(QPropertyAnimation):
 
         return super().eventFilter(obj, e)
 
-    def _onAniFinished(self):
+    def _onAniFinished(self) -> None:
         self.finished.disconnect()
         self.shadowEffect = None
         self.parent().setGraphicsEffect(None)
 
 
 class FluentAnimationSpeed(Enum):
-    """ Fluent animation speed """
+    """Fluent animation speed"""
+
     FAST = 0
     MEDIUM = 1
     SLOW = 2
 
 
 class FluentAnimationType(Enum):
-    """ Fluent animation type """
+    """Fluent animation type"""
+
     FAST_INVOKE = 0
     STRONG_INVOKE = 1
     FAST_DISMISS = 2
@@ -268,37 +287,38 @@ class FluentAnimationType(Enum):
 
 
 class FluentAnimationProperty(Enum):
-    """ Fluent animation property """
+    """Fluent animation property"""
+
     POSITION = "position"
     SCALE = "scale"
     ANGLE = "angle"
     OPACITY = "opacity"
 
 
-
 class FluentAnimationProperObject(QObject):
-    """ Fluent animation property object """
+    """Fluent animation property object"""
 
-    objects = {}
+    objects: ClassVar[Dict] = {}
 
-    def __init__(self, parent=None):
+    def __init__(self, parent: Optional[QObject] = None) -> None:
         super().__init__(parent=parent)
 
-    def getValue(self):
+    def getValue(self) -> Any:
         return 0
 
-    def setValue(self):
+    def setValue(self, value: Any) -> None:
         pass
 
     @classmethod
     def register(cls, name):
-        """ register menu animation manager
+        """register menu animation manager
 
         Parameters
         ----------
         name: Any
             the name of manager, it should be unique
         """
+
         def wrapper(Manager):
             if name not in cls.objects:
                 cls.objects[name] = Manager
@@ -308,26 +328,27 @@ class FluentAnimationProperObject(QObject):
         return wrapper
 
     @classmethod
-    def create(cls, propertyType: FluentAnimationProperty, parent=None) -> 'FluentAnimationProperObject':
+    def create(cls, propertyType: FluentAnimationProperty, parent=None) -> "FluentAnimationProperObject":
         if propertyType not in cls.objects:
-            raise ValueError(f"`{propertyType}` has not been registered")
+            msg = f"`{propertyType}` has not been registered"
+            raise ValueError(msg)
 
         return cls.objects[propertyType](parent)
 
 
 @FluentAnimationProperObject.register(FluentAnimationProperty.POSITION)
 class PositionObject(FluentAnimationProperObject):
-    """ Position object """
+    """Position object"""
 
-    def __init__(self, parent=None):
+    def __init__(self, parent: Optional[QObject] = None) -> None:
         super().__init__(parent)
         self._position = QPoint()
 
-    def getValue(self):
+    def getValue(self) -> QPoint:
         return self._position
 
-    def setValue(self, pos: QPoint):
-        self._position = pos
+    def setValue(self, value: QPoint) -> None:
+        self._position = value
         self.parent().update()
 
     position = pyqtProperty(QPoint, getValue, setValue)
@@ -335,17 +356,17 @@ class PositionObject(FluentAnimationProperObject):
 
 @FluentAnimationProperObject.register(FluentAnimationProperty.SCALE)
 class ScaleObject(FluentAnimationProperObject):
-    """ Scale object """
+    """Scale object"""
 
-    def __init__(self, parent=None):
+    def __init__(self, parent: Optional[QObject] = None) -> None:
         super().__init__(parent)
         self._scale = 1
 
-    def getValue(self):
+    def getValue(self) -> float:
         return self._scale
 
-    def setValue(self, scale: float):
-        self._scale = scale
+    def setValue(self, value: float) -> None:
+        self._scale = value
         self.parent().update()
 
     scale = pyqtProperty(float, getValue, setValue)
@@ -353,17 +374,17 @@ class ScaleObject(FluentAnimationProperObject):
 
 @FluentAnimationProperObject.register(FluentAnimationProperty.ANGLE)
 class AngleObject(FluentAnimationProperObject):
-    """ Angle object """
+    """Angle object"""
 
-    def __init__(self, parent=None):
+    def __init__(self, parent: Optional[QObject] = None) -> None:
         super().__init__(parent)
         self._angle = 0
 
-    def getValue(self):
+    def getValue(self) -> float:
         return self._angle
 
-    def setValue(self, angle: float):
-        self._angle = angle
+    def setValue(self, value: float) -> None:
+        self._angle = value
         self.parent().update()
 
     angle = pyqtProperty(float, getValue, setValue)
@@ -371,50 +392,50 @@ class AngleObject(FluentAnimationProperObject):
 
 @FluentAnimationProperObject.register(FluentAnimationProperty.OPACITY)
 class OpacityObject(FluentAnimationProperObject):
-    """ Opacity object """
+    """Opacity object"""
 
-    def __init__(self, parent=None):
+    def __init__(self, parent: Optional[QObject] = None) -> None:
         super().__init__(parent)
         self._opacity = 0
 
-    def getValue(self):
+    def getValue(self) -> float:
         return self._opacity
 
-    def setValue(self, opacity: float):
-        self._opacity = opacity
+    def setValue(self, value: float) -> None:
+        self._opacity = value
         self.parent().update()
 
     opacity = pyqtProperty(float, getValue, setValue)
 
 
 class FluentAnimation(QPropertyAnimation):
-    """ Fluent animation base """
+    """Fluent animation base"""
 
-    animations = {}
+    animations: ClassVar[Dict] = {}
 
-    def __init__(self, parent=None):
+    def __init__(self, parent: Optional[QObject] = None) -> None:
         super().__init__(parent=parent)
         self.setSpeed(FluentAnimationSpeed.FAST)
         self.setEasingCurve(self.curve())
 
     @classmethod
-    def createBezierCurve(cls, x1, y1, x2, y2):
+    def createBezierCurve(cls, x1: float, y1: float, x2: float, y2: float) -> QEasingCurve:
         curve = QEasingCurve(QEasingCurve.BezierSpline)
         curve.addCubicBezierSegment(QPointF(x1, y1), QPointF(x2, y2), QPointF(1, 1))
         return curve
 
     @classmethod
-    def curve(cls):
+    def curve(cls) -> QEasingCurve:
         return cls.createBezierCurve(0, 0, 1, 1)
 
-    def setSpeed(self, speed: FluentAnimationSpeed):
-        """ set the speed of animation """
+    def setSpeed(self, speed: FluentAnimationSpeed) -> None:
+        """set the speed of animation"""
         self.setDuration(self.speedToDuration(speed))
 
-    def speedToDuration(self, speed: FluentAnimationSpeed):
+    def speedToDuration(self, speed: FluentAnimationSpeed) -> int:
         return 100
 
-    def startAnimation(self, endValue, startValue=None):
+    def startAnimation(self, endValue: Any, startValue: Any = None) -> None:
         self.stop()
 
         if startValue is None:
@@ -425,21 +446,22 @@ class FluentAnimation(QPropertyAnimation):
         self.setEndValue(endValue)
         self.start()
 
-    def value(self):
+    def value(self) -> Any:
         return self.targetObject().getValue()
 
-    def setValue(self, value):
+    def setValue(self, value: Any) -> None:
         self.targetObject().setValue(value)
 
     @classmethod
     def register(cls, name):
-        """ register menu animation manager
+        """register menu animation manager
 
         Parameters
         ----------
         name: Any
             the name of manager, it should be unique
         """
+
         def wrapper(Manager):
             if name not in cls.animations:
                 cls.animations[name] = Manager
@@ -449,10 +471,17 @@ class FluentAnimation(QPropertyAnimation):
         return wrapper
 
     @classmethod
-    def create(cls, aniType: FluentAnimationType, propertyType: FluentAnimationProperty,
-               speed=FluentAnimationSpeed.FAST, value=None, parent=None) -> "FluentAnimation":
+    def create(
+        cls,
+        aniType: FluentAnimationType,
+        propertyType: FluentAnimationProperty,
+        speed: FluentAnimationSpeed = FluentAnimationSpeed.FAST,
+        value: Optional[int] = None,
+        parent: Optional[QObject] = None,
+    ) -> "FluentAnimation":
         if aniType not in cls.animations:
-            raise ValueError(f"`{aniType}` has not been registered.")
+            msg = f"`{aniType}` has not been registered."
+            raise ValueError(msg)
 
         obj = FluentAnimationProperObject.create(propertyType, parent)
         ani = cls.animations[aniType](parent)
@@ -469,13 +498,13 @@ class FluentAnimation(QPropertyAnimation):
 
 @FluentAnimation.register(FluentAnimationType.FAST_INVOKE)
 class FastInvokeAnimation(FluentAnimation):
-    """ Fast invoke animation """
+    """Fast invoke animation"""
 
     @classmethod
-    def curve(cls):
+    def curve(cls) -> QEasingCurve:
         return cls.createBezierCurve(0, 0, 0, 1)
 
-    def speedToDuration(self, speed: FluentAnimationSpeed):
+    def speedToDuration(self, speed: FluentAnimationSpeed) -> int:
         if speed == FluentAnimationSpeed.FAST:
             return 187
         if speed == FluentAnimationSpeed.MEDIUM:
@@ -486,62 +515,61 @@ class FastInvokeAnimation(FluentAnimation):
 
 @FluentAnimation.register(FluentAnimationType.STRONG_INVOKE)
 class StrongInvokeAnimation(FluentAnimation):
-    """ Strong invoke animation """
+    """Strong invoke animation"""
 
     @classmethod
-    def curve(cls):
+    def curve(cls) -> QEasingCurve:
         return cls.createBezierCurve(0.13, 1.62, 0, 0.92)
 
-    def speedToDuration(self, speed: FluentAnimationSpeed):
+    def speedToDuration(self, speed: FluentAnimationSpeed) -> int:
         return 667
 
 
 @FluentAnimation.register(FluentAnimationType.FAST_DISMISS)
 class FastDismissAnimation(FastInvokeAnimation):
-    """ Fast dismiss animation """
+    """Fast dismiss animation"""
 
 
 @FluentAnimation.register(FluentAnimationType.SOFT_DISMISS)
 class SoftDismissAnimation(FluentAnimation):
-    """ Soft dismiss animation """
+    """Soft dismiss animation"""
 
     @classmethod
-    def curve(cls):
+    def curve(cls) -> QEasingCurve:
         return cls.createBezierCurve(1, 0, 1, 1)
 
-    def speedToDuration(self, speed: FluentAnimationSpeed):
+    def speedToDuration(self, speed: FluentAnimationSpeed) -> int:
         return 167
 
 
 @FluentAnimation.register(FluentAnimationType.POINT_TO_POINT)
 class PointToPointAnimation(FastDismissAnimation):
-    """ Point to point animation """
+    """Point to point animation"""
 
     @classmethod
-    def curve(cls):
+    def curve(cls) -> QEasingCurve:
         return cls.createBezierCurve(0.55, 0.55, 0, 1)
 
 
 @FluentAnimation.register(FluentAnimationType.FADE_IN_OUT)
 class FadeInOutAnimation(FluentAnimation):
-    """ Fade in/out animation """
+    """Fade in/out animation"""
 
-    def speedToDuration(self, speed: FluentAnimationSpeed):
+    def speedToDuration(self, speed: FluentAnimationSpeed) -> int:
         return 83
 
 
-
 class ScaleSlideAnimation(QParallelAnimationGroup):
-    """ Scale and slide animation """
+    """Scale and slide animation"""
 
     valueChanged = pyqtSignal(QRectF)
 
-    def __init__(self, parent=None, orient=Qt.Orientation.Horizontal):
+    def __init__(self, parent: Optional[QObject] = None, orient: Qt.Orientation = Qt.Orientation.Horizontal) -> None:
         super().__init__(parent)
         self.orient = orient
         self._geometry = QRectF(0, 0, 16, 3) if self.isHorizontal() else QRectF(0, 0, 3, 16)
 
-    def startAnimation(self, endRect: QRectF, useCrossFade=False):
+    def startAnimation(self, endRect: QRectF, useCrossFade: bool = False) -> None:
         self.stopAnimation()
 
         startRect = QRectF(self.geometry)
@@ -563,12 +591,19 @@ class ScaleSlideAnimation(QParallelAnimationGroup):
         else:
             self._startCrossFadeAnimation(startRect, endRect)
 
-    def stopAnimation(self):
+    def stopAnimation(self) -> None:
         self.stop()
         self.clear()
 
-    def _startSlideAnimation(self, startRect, endRect, from_, to, dimension):
-        """ Animate the indicator using WinUI 3 squash and stretch logic
+    def _startSlideAnimation(
+        self,
+        startRect: QRectF,
+        endRect: QRectF,
+        from_: float,
+        to: float,
+        dimension: float,
+    ) -> None:
+        """Animate the indicator using WinUI 3 squash and stretch logic
 
         Key algorithm:
         1. middleScale = abs(to - from) / dimension + (from < to ? endScale : beginScale)
@@ -633,7 +668,7 @@ class ScaleSlideAnimation(QParallelAnimationGroup):
 
         self.start()
 
-    def _startCrossFadeAnimation(self, startRect, endRect):
+    def _startCrossFadeAnimation(self, startRect: QRectF, endRect: QRectF) -> None:
         self.setGeometry(endRect)
 
         # Determine growth direction based on relative position
@@ -642,12 +677,10 @@ class ScaleSlideAnimation(QParallelAnimationGroup):
 
         if self.isHorizontal():
             dim = endRect.width()
-            startGeo = QRectF(
-                endRect.x() + (0 if isNextBelow else dim), endRect.y(), 0, endRect.height())
+            startGeo = QRectF(endRect.x() + (0 if isNextBelow else dim), endRect.y(), 0, endRect.height())
         else:
             dim = endRect.height()
-            startGeo = QRectF(endRect.x(), endRect.y() +
-                              (0 if isNextBelow else dim), endRect.width(), 0)
+            startGeo = QRectF(endRect.x(), endRect.y() + (0 if isNextBelow else dim), endRect.width(), 0)
 
         self.setGeometry(startGeo)
 
@@ -667,20 +700,20 @@ class ScaleSlideAnimation(QParallelAnimationGroup):
         self.addAnimation(posAni)
         self.start()
 
-    def isHorizontal(self):
+    def isHorizontal(self) -> bool:
         return self.orient == Qt.Orientation.Horizontal
 
-    def getPos(self):
+    def getPos(self) -> QPointF:
         return QPointF(self.geometry.topLeft())
 
-    def setPos(self, pos: QPointF):
+    def setPos(self, pos: QPointF) -> None:
         self._geometry.moveTopLeft(pos)
         self.valueChanged.emit(self.geometry)
 
-    def getLength(self):
+    def getLength(self) -> float:
         return self.geometry.width() if self.isHorizontal() else self.geometry.height()
 
-    def setLength(self, length):
+    def setLength(self, length: float) -> None:
         if self.isHorizontal():
             self._geometry.setWidth(length)
         else:
@@ -691,14 +724,14 @@ class ScaleSlideAnimation(QParallelAnimationGroup):
     def getGeometry(self) -> QRectF:
         return self._geometry
 
-    def setGeometry(self, rect: QRectF):
+    def setGeometry(self, rect: QRectF) -> None:
         self._geometry = rect
 
-    def moveLeft(self, x):
+    def moveLeft(self, x: float) -> None:
         self._geometry.moveLeft(x)
         self.valueChanged.emit(self.geometry)
 
-    def setValue(self, rect):
+    def setValue(self, rect: QRectF) -> None:
         self.setGeometry(rect)
 
     pos = pyqtProperty(QPointF, getPos, setPos)
