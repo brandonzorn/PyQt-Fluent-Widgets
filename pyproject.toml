@@ -1,0 +1,85 @@
+[project]
+name = "pyqt-fluent-widgets"
+version = "1.11.2"
+description = "A fluent design widgets library based on PyQt5"
+readme = "README.md"
+authors = [
+    { name = "zhiyiYo", email = "shokokawaii@outlook.com" }
+]
+requires-python = ">=3.8"
+dependencies = [
+    "darkdetect>=0.8.0",
+    "pyqt5>=5.15.0",
+    "pyqt5-frameless-window>=0.8.0",
+]
+
+[tool.uv]
+required-environments = [
+    "sys_platform == 'win32' and platform_machine == 'AMD64'"
+]
+
+[tool.ruff]
+line-length = 120
+extend-exclude = ["_rc", "__init__*"]
+
+[tool.ruff.format]
+indent-style = "space"
+quote-style = "double"
+
+[tool.ruff.lint]
+select = [
+    "A",
+    "ANN",
+    "ARG",
+    "C4",
+    "COM",
+    "E",
+    "EM",
+    "ERA",
+    "F",
+    "FIX",
+    "FURB",
+    "G",
+    "I",
+    "ICN",
+    "ISC",
+    "LOG",
+    "PERF",
+    "PIE",
+    "PLE",
+    "PLW",
+    "PTH",
+    "Q",
+    "RET",
+    "RSE",
+    "RUF",
+    "SIM",
+    "T20",
+    "TRY",
+    "UP",
+    "W",
+]
+extend-ignore = [
+    "ANN401",
+    "N802",
+    "N803",
+    "N806",
+    "N815",
+    "RUF001",
+    "RUF002",
+    "RUF003",
+]
+
+[tool.ruff.lint.isort]
+force-sort-within-sections = true
+order-by-type = false
+known-first-party = ["qframelesswindow"]
+
+[tool.ruff.lint.flake8-quotes]
+docstring-quotes = "double"
+inline-quotes = "double"
+multiline-quotes = "double"
+
+[tool.ruff.lint.flake8-annotations]
+allow-star-arg-any = true
+suppress-dummy-args = true
