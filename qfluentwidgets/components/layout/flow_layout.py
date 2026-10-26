@@ -1,14 +1,24 @@
-# coding:utf-8
-from typing import List
+from typing import List, Optional
 
-from PyQt5.QtCore import QSize, QPoint, Qt, QRect, QPropertyAnimation, QParallelAnimationGroup, QEasingCurve, QEvent, QTimer, QObject
-from PyQt5.QtWidgets import QLayout, QWidgetItem, QLayoutItem
+from PyQt5.QtCore import (
+    QEasingCurve,
+    QEvent,
+    QObject,
+    QParallelAnimationGroup,
+    QPoint,
+    QPropertyAnimation,
+    QRect,
+    QSize,
+    Qt,
+    QTimer,
+)
+from PyQt5.QtWidgets import QLayout, QLayoutItem, QWidget, QWidgetItem
 
 
 class FlowLayout(QLayout):
-    """ Flow layout """
+    """Flow layout"""
 
-    def __init__(self, parent=None, needAni=False, isTight=False):
+    def __init__(self, parent: Optional[QWidget] = None, needAni: bool = False, isTight: bool = False) -> None:
         """
         Parameters
         ----------
@@ -22,8 +32,8 @@ class FlowLayout(QLayout):
             whether to use the tight layout when widgets are hidden
         """
         super().__init__(parent)
-        self._items = []    # type: List[QLayoutItem]
-        self._anis = []    # type: List[QPropertyAnimation]
+        self._items: List[QLayoutItem] = []
+        self._anis: List[QPropertyAnimation] = []
         self._aniGroup = QParallelAnimationGroup(self)
         self._verticalSpacing = 10
         self._horizontalSpacing = 10
@@ -37,22 +47,22 @@ class FlowLayout(QLayout):
         self._wParent = None
         self._isInstalledEventFilter = False
 
-    def addItem(self, item):
+    def addItem(self, item: QLayoutItem) -> None:
         self._items.append(item)
 
-    def insertItem(self, index, item):
+    def insertItem(self, index: int, item: QLayoutItem) -> None:
         self._items.insert(index, item)
 
-    def addWidget(self, w):
+    def addWidget(self, w: QWidget) -> None:
         super().addWidget(w)
         self._onWidgetAdded(w)
 
-    def insertWidget(self, index, w):
+    def insertWidget(self, index: int, w: QWidget) -> None:
         self.insertItem(index, QWidgetItem(w))
         self.addChildWidget(w)
         self._onWidgetAdded(w, index)
 
-    def _onWidgetAdded(self, w, index=-1):
+    def _onWidgetAdded(self, w: QWidget, index: int = -1) -> None:
         if not self._isInstalledEventFilter:
             if w.parent():
                 self._wParent = w.parent()
@@ -63,11 +73,11 @@ class FlowLayout(QLayout):
         if not self.needAni:
             return
 
-        ani = QPropertyAnimation(w, b'geometry')
+        ani = QPropertyAnimation(w, b"geometry")
         ani.setEndValue(QRect(QPoint(0, 0), w.size()))
         ani.setDuration(self.duration)
         ani.setEasingCurve(self.ease)
-        w.setProperty('flowAni', ani)
+        w.setProperty("flowAni", ani)
         self._aniGroup.addAnimation(ani)
 
         if index == -1:
@@ -75,8 +85,8 @@ class FlowLayout(QLayout):
         else:
             self._anis.insert(index, ani)
 
-    def setAnimation(self, duration, ease=QEasingCurve.Linear):
-        """ set the moving animation
+    def setAnimation(self, duration: int, ease: QEasingCurve.Type = QEasingCurve.Type.Linear) -> None:
+        """set the moving animation
 
         Parameters
         ----------
@@ -96,19 +106,19 @@ class FlowLayout(QLayout):
             ani.setDuration(duration)
             ani.setEasingCurve(ease)
 
-    def count(self):
+    def count(self) -> int:
         return len(self._items)
 
-    def itemAt(self, index: int):
+    def itemAt(self, index: int) -> Optional[QLayoutItem]:
         if 0 <= index < len(self._items):
             return self._items[index]
 
         return None
 
-    def takeAt(self, index: int):
+    def takeAt(self, index: int) -> Optional[QWidget]:
         if 0 <= index < len(self._items):
-            item = self._items[index]   # type: QLayoutItem
-            ani = item.widget().property('flowAni')
+            item: QLayoutItem = self._items[index]
+            ani = item.widget().property("flowAni")
             if ani:
                 self._anis.remove(ani)
                 self._aniGroup.removeAnimation(ani)
@@ -118,18 +128,19 @@ class FlowLayout(QLayout):
 
         return None
 
-    def removeWidget(self, widget):
+    def removeWidget(self, widget) -> Optional[QWidget]:
         for i, item in enumerate(self._items):
             if item.widget() is widget:
                 return self.takeAt(i)
+        return None
 
-    def removeAllWidgets(self):
-        """ remove all widgets from layout """
+    def removeAllWidgets(self) -> None:
+        """remove all widgets from layout"""
         while self._items:
             self.takeAt(0)
 
-    def takeAllWidgets(self):
-        """ remove all widgets from layout and delete them """
+    def takeAllWidgets(self) -> None:
+        """remove all widgets from layout and delete them"""
         while self._items:
             w = self.takeAt(0)
             if w:
@@ -138,14 +149,14 @@ class FlowLayout(QLayout):
     def expandingDirections(self):
         return Qt.Orientation(0)
 
-    def hasHeightForWidth(self):
+    def hasHeightForWidth(self) -> bool:
         return True
 
-    def heightForWidth(self, width: int):
-        """ get the minimal height according to width """
+    def heightForWidth(self, width: int) -> int:
+        """get the minimal height according to width"""
         return self._doLayout(QRect(0, 0, width, 0), False)
 
-    def setGeometry(self, rect: QRect):
+    def setGeometry(self, rect: QRect) -> None:
         super().setGeometry(rect)
 
         if self.needAni:
@@ -153,34 +164,34 @@ class FlowLayout(QLayout):
         else:
             self._doLayout(rect, True)
 
-    def sizeHint(self):
+    def sizeHint(self) -> QSize:
         return self.minimumSize()
 
-    def minimumSize(self):
+    def minimumSize(self) -> QSize:
         size = QSize()
 
         for item in self._items:
             size = size.expandedTo(item.minimumSize())
 
         m = self.contentsMargins()
-        size += QSize(m.left()+m.right(), m.top()+m.bottom())
+        size += QSize(m.left() + m.right(), m.top() + m.bottom())
 
         return size
 
-    def setVerticalSpacing(self, spacing: int):
-        """ set vertical spacing between widgets """
+    def setVerticalSpacing(self, spacing: int) -> None:
+        """set vertical spacing between widgets"""
         self._verticalSpacing = spacing
 
-    def verticalSpacing(self):
-        """ get vertical spacing between widgets """
+    def verticalSpacing(self) -> int:
+        """get vertical spacing between widgets"""
         return self._verticalSpacing
 
-    def setHorizontalSpacing(self, spacing: int):
-        """ set horizontal spacing between widgets """
+    def setHorizontalSpacing(self, spacing: int) -> None:
+        """set horizontal spacing between widgets"""
         self._horizontalSpacing = spacing
 
-    def horizontalSpacing(self):
-        """ get horizontal spacing between widgets """
+    def horizontalSpacing(self) -> int:
+        """get horizontal spacing between widgets"""
         return self._horizontalSpacing
 
     def eventFilter(self, obj: QObject, event: QEvent) -> bool:
@@ -196,7 +207,7 @@ class FlowLayout(QLayout):
         return super().eventFilter(obj, event)
 
     def _doLayout(self, rect: QRect, move: bool):
-        """ adjust widgets position according to the window size """
+        """adjust widgets position according to the window size"""
         aniRestart = False
         margin = self.contentsMargins()
         x = rect.x() + margin.left()
@@ -237,8 +248,7 @@ class FlowLayout(QLayout):
 
 
 class AdaptiveFlowLayout(FlowLayout):
-
-    def __init__(self, parent=None, needAni=False, isTight=False):
+    def __init__(self, parent: Optional[QWidget] = None, needAni: bool = False, isTight: bool = False) -> None:
         """
         Parameters
         ----------
@@ -251,16 +261,16 @@ class AdaptiveFlowLayout(FlowLayout):
         self._widgetMinimumWidth = 200
         self._widgetMaximumWidth = None
 
-    def setWidgetMinimumWidth(self, width: int):
+    def setWidgetMinimumWidth(self, width: int) -> None:
         self._widgetMinimumWidth = width
 
-    def widgetMinimumWidth(self):
+    def widgetMinimumWidth(self) -> int:
         return self._widgetMinimumWidth
 
-    def setWidgetMaximumWidth(self, width):
+    def setWidgetMaximumWidth(self, width: int) -> None:
         self._widgetMaximumWidth = width
 
-    def widgetMaximumWidth(self):
+    def widgetMaximumWidth(self) -> int:
         return self._widgetMaximumWidth
 
     def _doLayout(self, rect: QRect, move: bool):
