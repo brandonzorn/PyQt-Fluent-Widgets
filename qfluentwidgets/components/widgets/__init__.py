@@ -13,7 +13,7 @@ from .command_bar import CommandBar, CommandButton, CommandBarView
 from .flip_view import FlipView, HorizontalFlipView, VerticalFlipView, FlipImageDelegate
 from .line_edit import LineEdit, TextEdit, PlainTextEdit, LineEditButton, SearchLineEdit, PasswordLineEdit, TextBrowser
 from .icon_widget import IconWidget
-from .label import (PixmapLabel, CaptionLabel, StrongBodyLabel, BodyLabel, SubtitleLabel, TitleLabel,
+from .label import (PixmapLabel, CaptionLabel, StrongBodyLabel, LargeBodyLabel, LargeStrongBodyLabel, BodyLabel, SubtitleLabel, TitleLabel,
                     LargeTitleLabel, DisplayLabel, FluentLabelBase, ImageLabel, AvatarWidget, HyperlinkLabel)
 from .list_view import ListWidget, ListView, ListItemDelegate
 from .menu import (DWMMenu, LineEditMenu, RoundMenu, MenuAnimationManager, MenuAnimationType, IndicatorMenuItemDelegate,
