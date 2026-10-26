@@ -1,19 +1,19 @@
-# coding:utf-8
-from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtGui import QPixmap, QPainter, QColor
+from typing import Optional
+
+from PyQt5.QtGui import QColor, QPainter, QPaintEvent
 from PyQt5.QtWidgets import QWidget
 
 from ...common.style_sheet import isDarkTheme
 
 
 class HorizontalSeparator(QWidget):
-    """ Horizontal separator """
+    """Horizontal separator"""
 
-    def __init__(self, parent=None):
+    def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent=parent)
         self.setFixedHeight(3)
 
-    def paintEvent(self, e):
+    def paintEvent(self, e: QPaintEvent) -> None:
         painter = QPainter(self)
         painter.setRenderHints(QPainter.Antialiasing)
 
@@ -26,13 +26,13 @@ class HorizontalSeparator(QWidget):
 
 
 class VerticalSeparator(QWidget):
-    """ Vertical separator """
+    """Vertical separator"""
 
-    def __init__(self, parent=None):
+    def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent=parent)
         self.setFixedWidth(3)
 
-    def paintEvent(self, e):
+    def paintEvent(self, e: QPaintEvent) -> None:
         painter = QPainter(self)
         painter.setRenderHints(QPainter.Antialiasing)
 
