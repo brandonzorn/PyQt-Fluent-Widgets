@@ -1,27 +1,22 @@
-# coding:utf-8
-from typing import List
 from pathlib import Path
+from typing import List, Optional
 
-from PyQt5.QtCore import Qt, pyqtSignal, QSize
-from PyQt5.QtGui import QPainter, QIcon
-from PyQt5.QtWidgets import (QPushButton, QFileDialog, QWidget, QLabel,
-                             QHBoxLayout, QToolButton, QSizePolicy)
+from PyQt5.QtCore import pyqtSignal, QSize, Qt
+from PyQt5.QtWidgets import QFileDialog, QHBoxLayout, QLabel, QSizePolicy, QWidget
 
-from ...components.widgets.button import ToolButton, PushButton
 from ...common.config import ConfigItem, qconfig
-from ...common.icon import drawIcon
 from ...common.icon import FluentIcon as FIF
+from ...components.widgets.button import PushButton, ToolButton
 from ..dialog_box.dialog import Dialog
 from .expand_setting_card import ExpandSettingCard
 
 
-
 class FolderItem(QWidget):
-    """ Folder item """
+    """Folder item"""
 
     removed = pyqtSignal(QWidget)
 
-    def __init__(self, folder: str, parent=None):
+    def __init__(self, folder: str, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent=parent)
         self.folder = folder
         self.hBoxLayout = QHBoxLayout(self)
@@ -34,25 +29,31 @@ class FolderItem(QWidget):
         self.setFixedHeight(53)
         self.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Fixed)
         self.hBoxLayout.setContentsMargins(48, 0, 60, 0)
-        self.hBoxLayout.addWidget(self.folderLabel, 0, Qt.AlignLeft)
+        self.hBoxLayout.addWidget(self.folderLabel, 0, Qt.AlignmentFlag.AlignLeft)
         self.hBoxLayout.addSpacing(16)
         self.hBoxLayout.addStretch(1)
-        self.hBoxLayout.addWidget(self.removeButton, 0, Qt.AlignRight)
-        self.hBoxLayout.setAlignment(Qt.AlignVCenter)
+        self.hBoxLayout.addWidget(self.removeButton, 0, Qt.AlignmentFlag.AlignRight)
+        self.hBoxLayout.setAlignment(Qt.AlignmentFlag.AlignVCenter)
 
         # Set object name to apply theme-aware color style
-        self.folderLabel.setObjectName('titleLabel')
+        self.folderLabel.setObjectName("titleLabel")
 
-        self.removeButton.clicked.connect(
-            lambda: self.removed.emit(self))
+        self.removeButton.clicked.connect(lambda: self.removed.emit(self))
 
 
 class FolderListSettingCard(ExpandSettingCard):
-    """ Folder list setting card """
+    """Folder list setting card"""
 
     folderChanged = pyqtSignal(list)
 
-    def __init__(self, configItem: ConfigItem, title: str, content: str = None, directory="./", parent=None):
+    def __init__(
+        self,
+        configItem: ConfigItem,
+        title: str,
+        content: Optional[str] = None,
+        directory: str = "./",
+        parent: Optional[QWidget] = None,
+    ) -> None:
         """
         Parameters
         ----------
@@ -74,27 +75,30 @@ class FolderListSettingCard(ExpandSettingCard):
         super().__init__(FIF.FOLDER, title, content, parent)
         self.configItem = configItem
         self._dialogDirectory = directory
-        self.addFolderButton = PushButton(self.tr('Add folder'), self, FIF.FOLDER_ADD)
+        self.addFolderButton = PushButton(self.tr("Add folder"), self, FIF.FOLDER_ADD)
 
-        self.folders = qconfig.get(configItem).copy()   # type:List[str]
+        self.folders: List[str] = qconfig.get(configItem).copy()
         self.__initWidget()
 
-    def __initWidget(self):
+    def __initWidget(self) -> None:
         self.addWidget(self.addFolderButton)
 
         # initialize layout
         self.viewLayout.setSpacing(0)
-        self.viewLayout.setAlignment(Qt.AlignTop)
+        self.viewLayout.setAlignment(Qt.AlignmentFlag.AlignTop)
         self.viewLayout.setContentsMargins(0, 0, 0, 0)
         for folder in self.folders:
             self.__addFolderItem(folder)
 
         self.addFolderButton.clicked.connect(self.__showFolderDialog)
 
-    def __showFolderDialog(self):
-        """ show folder dialog """
+    def __showFolderDialog(self) -> None:
+        """show folder dialog"""
         folder = QFileDialog.getExistingDirectory(
-            self, self.tr("Choose folder"), self._dialogDirectory)
+            self,
+            self.tr("Choose folder"),
+            self._dialogDirectory,
+        )
 
         if not folder or folder in self.folders:
             return
@@ -104,27 +108,32 @@ class FolderListSettingCard(ExpandSettingCard):
         qconfig.set(self.configItem, self.folders)
         self.folderChanged.emit(self.folders)
 
-    def __addFolderItem(self, folder: str):
-        """ add folder item """
+    def __addFolderItem(self, folder: str) -> None:
+        """add folder item"""
         item = FolderItem(folder, self.view)
         item.removed.connect(self.__showConfirmDialog)
         self.viewLayout.addWidget(item)
         item.show()
         self._adjustViewSize()
 
-    def __showConfirmDialog(self, item: FolderItem):
-        """ show confirm dialog """
+    def __showConfirmDialog(self, item: FolderItem) -> None:
+        """show confirm dialog"""
         name = Path(item.folder).name
-        title = self.tr('Are you sure you want to delete the folder?')
-        content = self.tr("If you delete the ") + f'"{name}"' + \
-            self.tr(" folder and remove it from the list, the folder will no "
-                    "longer appear in the list, but will not be deleted.")
+        title = self.tr("Are you sure you want to delete the folder?")
+        content = (
+            self.tr("If you delete the ")
+            + f'"{name}"'
+            + self.tr(
+                " folder and remove it from the list, the folder will no "
+                "longer appear in the list, but will not be deleted.",
+            )
+        )
         w = Dialog(title, content, self.window())
         w.yesSignal.connect(lambda: self.__removeFolder(item))
         w.exec_()
 
-    def __removeFolder(self, item: FolderItem):
-        """ remove folder """
+    def __removeFolder(self, item: FolderItem) -> None:
+        """remove folder"""
         if item.folder not in self.folders:
             return
 

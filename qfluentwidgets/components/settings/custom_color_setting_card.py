@@ -1,23 +1,30 @@
-# coding:utf-8
-from typing import Union
-from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtGui import QIcon, QColor
-from PyQt5.QtWidgets import QWidget, QLabel, QButtonGroup, QVBoxLayout, QPushButton, QHBoxLayout
+from typing import Optional, Union
 
-from ..dialog_box import ColorDialog
-from .expand_setting_card import ExpandGroupSettingCard
-from ..widgets.button import RadioButton
-from ...common.config import qconfig, ColorConfigItem
+from PyQt5.QtCore import pyqtSignal, Qt
+from PyQt5.QtGui import QColor, QIcon
+from PyQt5.QtWidgets import QButtonGroup, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
+
+from ...common.config import ColorConfigItem, qconfig
 from ...common.icon import FluentIconBase
+from ..dialog_box import ColorDialog
+from ..widgets.button import RadioButton
+from .expand_setting_card import ExpandGroupSettingCard
 
 
 class CustomColorSettingCard(ExpandGroupSettingCard):
-    """ Custom color setting card """
+    """Custom color setting card"""
 
     colorChanged = pyqtSignal(QColor)
 
-    def __init__(self, configItem: ColorConfigItem, icon: Union[str, QIcon, FluentIconBase], title: str,
-                 content=None, parent=None, enableAlpha=False):
+    def __init__(
+        self,
+        configItem: ColorConfigItem,
+        icon: Union[str, QIcon, FluentIconBase],
+        title: str,
+        content: Optional[str] = None,
+        parent: Optional[QWidget] = None,
+        enableAlpha: bool = False,
+    ) -> None:
         """
         Parameters
         ----------
@@ -49,22 +56,18 @@ class CustomColorSettingCard(ExpandGroupSettingCard):
 
         self.radioWidget = QWidget(self.view)
         self.radioLayout = QVBoxLayout(self.radioWidget)
-        self.defaultRadioButton = RadioButton(
-            self.tr('Default color'), self.radioWidget)
-        self.customRadioButton = RadioButton(
-            self.tr('Custom color'), self.radioWidget)
+        self.defaultRadioButton = RadioButton(self.tr("Default color"), self.radioWidget)
+        self.customRadioButton = RadioButton(self.tr("Custom color"), self.radioWidget)
         self.buttonGroup = QButtonGroup(self)
 
         self.customColorWidget = QWidget(self.view)
         self.customColorLayout = QHBoxLayout(self.customColorWidget)
-        self.customLabel = QLabel(
-            self.tr('Custom color'), self.customColorWidget)
-        self.chooseColorButton = QPushButton(
-            self.tr('Choose color'), self.customColorWidget)
+        self.customLabel = QLabel(self.tr("Custom color"), self.customColorWidget)
+        self.chooseColorButton = QPushButton(self.tr("Choose color"), self.customColorWidget)
 
         self.__initWidget()
 
-    def __initWidget(self):
+    def __initWidget(self) -> None:
         self.__initLayout()
 
         if self.defaultColor != self.customColor:
@@ -79,35 +82,35 @@ class CustomColorSettingCard(ExpandGroupSettingCard):
 
         self.choiceLabel.setObjectName("titleLabel")
         self.customLabel.setObjectName("titleLabel")
-        self.chooseColorButton.setObjectName('chooseColorButton')
+        self.chooseColorButton.setObjectName("chooseColorButton")
 
         self.buttonGroup.buttonClicked.connect(self.__onRadioButtonClicked)
         self.chooseColorButton.clicked.connect(self.__showColorDialog)
 
-    def __initLayout(self):
+    def __initLayout(self) -> None:
         self.addWidget(self.choiceLabel)
 
         self.radioLayout.setSpacing(19)
-        self.radioLayout.setAlignment(Qt.AlignTop)
+        self.radioLayout.setAlignment(Qt.AlignmentFlag.AlignTop)
         self.radioLayout.setContentsMargins(48, 18, 0, 18)
         self.buttonGroup.addButton(self.customRadioButton)
         self.buttonGroup.addButton(self.defaultRadioButton)
         self.radioLayout.addWidget(self.customRadioButton)
         self.radioLayout.addWidget(self.defaultRadioButton)
-        self.radioLayout.setSizeConstraint(QVBoxLayout.SetMinimumSize)
+        self.radioLayout.setSizeConstraint(QVBoxLayout.SizeConstraint.SetMinimumSize)
 
         self.customColorLayout.setContentsMargins(48, 18, 44, 18)
-        self.customColorLayout.addWidget(self.customLabel, 0, Qt.AlignLeft)
-        self.customColorLayout.addWidget(self.chooseColorButton, 0, Qt.AlignRight)
-        self.customColorLayout.setSizeConstraint(QHBoxLayout.SetMinimumSize)
+        self.customColorLayout.addWidget(self.customLabel, 0, Qt.AlignmentFlag.AlignLeft)
+        self.customColorLayout.addWidget(self.chooseColorButton, 0, Qt.AlignmentFlag.AlignRight)
+        self.customColorLayout.setSizeConstraint(QHBoxLayout.SizeConstraint.SetMinimumSize)
 
         self.viewLayout.setSpacing(0)
         self.viewLayout.setContentsMargins(0, 0, 0, 0)
         self.addGroupWidget(self.radioWidget)
         self.addGroupWidget(self.customColorWidget)
 
-    def __onRadioButtonClicked(self, button: RadioButton):
-        """ radio button clicked slot """
+    def __onRadioButtonClicked(self, button: RadioButton) -> None:
+        """radio button clicked slot"""
         if button.text() == self.choiceLabel.text():
             return
 
@@ -125,15 +128,19 @@ class CustomColorSettingCard(ExpandGroupSettingCard):
             if self.defaultColor != self.customColor:
                 self.colorChanged.emit(self.customColor)
 
-    def __showColorDialog(self):
-        """ show color dialog """
+    def __showColorDialog(self) -> None:
+        """show color dialog"""
         w = ColorDialog(
-            qconfig.get(self.configItem), self.tr('Choose color'), self.window(), self.enableAlpha)
+            qconfig.get(self.configItem),
+            self.tr("Choose color"),
+            self.window(),
+            self.enableAlpha,
+        )
         w.colorChanged.connect(self.__onCustomColorChanged)
         w.exec()
 
-    def __onCustomColorChanged(self, color):
-        """ custom color changed slot """
+    def __onCustomColorChanged(self, color: QColor) -> None:
+        """custom color changed slot"""
         qconfig.set(self.configItem, color)
         self.customColor = QColor(color)
         self.colorChanged.emit(color)

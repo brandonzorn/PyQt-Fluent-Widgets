@@ -1,25 +1,22 @@
-# coding:utf-8
-from typing import Union
+from typing import Any, List, Optional, Union
 
-from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtGui import QColor, QIcon, QPainter
-from PyQt5.QtWidgets import (QFrame, QHBoxLayout, QLabel, QToolButton,
-                             QVBoxLayout, QPushButton)
+from PyQt5.QtCore import pyqtSignal, Qt
+from PyQt5.QtGui import QColor, QIcon, QPainter, QPaintEvent
+from PyQt5.QtWidgets import QFrame, QHBoxLayout, QLabel, QPushButton, QToolButton, QVBoxLayout, QWidget
 
-from ..dialog_box.color_dialog import ColorDialog
-from ..widgets.combo_box import ComboBox
-from ..widgets.switch_button import SwitchButton, IndicatorPosition
-from ..widgets.slider import Slider
-from ..widgets.icon_widget import IconWidget
-from ..widgets.button import HyperlinkButton
+from ...common.config import ConfigItem, isDarkTheme, OptionsConfigItem, qconfig
+from ...common.icon import drawIcon, FluentIconBase
 from ...common.style_sheet import FluentStyleSheet
-from ...common.config import qconfig, isDarkTheme, ConfigItem, OptionsConfigItem
-from ...common.icon import FluentIconBase, drawIcon
+from ..dialog_box.color_dialog import ColorDialog
+from ..widgets.button import HyperlinkButton
+from ..widgets.combo_box import ComboBox
+from ..widgets.icon_widget import IconWidget
+from ..widgets.slider import Slider
+from ..widgets.switch_button import IndicatorPosition, SwitchButton
 
 
 class SettingIconWidget(IconWidget):
-
-    def paintEvent(self, e):
+    def paintEvent(self, e: QPaintEvent) -> None:
         painter = QPainter(self)
 
         if not self.isEnabled():
@@ -29,11 +26,16 @@ class SettingIconWidget(IconWidget):
         drawIcon(self._icon, painter, self.rect())
 
 
-
 class SettingCard(QFrame):
-    """ Setting card """
+    """Setting card"""
 
-    def __init__(self, icon: Union[str, QIcon, FluentIconBase], title, content=None, parent=None):
+    def __init__(
+        self,
+        icon: Union[str, QIcon, FluentIconBase],
+        title: str,
+        content: Optional[str] = None,
+        parent: Optional[QWidget] = None,
+    ) -> None:
         """
         Parameters
         ----------
@@ -52,7 +54,7 @@ class SettingCard(QFrame):
         super().__init__(parent=parent)
         self.iconLabel = SettingIconWidget(icon, self)
         self.titleLabel = QLabel(title, self)
-        self.contentLabel = QLabel(content or '', self)
+        self.contentLabel = QLabel(content or "", self)
         self.hBoxLayout = QHBoxLayout(self)
         self.vBoxLayout = QVBoxLayout()
 
@@ -65,42 +67,41 @@ class SettingCard(QFrame):
         # initialize layout
         self.hBoxLayout.setSpacing(0)
         self.hBoxLayout.setContentsMargins(16, 0, 0, 0)
-        self.hBoxLayout.setAlignment(Qt.AlignVCenter)
+        self.hBoxLayout.setAlignment(Qt.AlignmentFlag.AlignVCenter)
         self.vBoxLayout.setSpacing(0)
         self.vBoxLayout.setContentsMargins(0, 0, 0, 0)
-        self.vBoxLayout.setAlignment(Qt.AlignVCenter)
+        self.vBoxLayout.setAlignment(Qt.AlignmentFlag.AlignVCenter)
 
-        self.hBoxLayout.addWidget(self.iconLabel, 0, Qt.AlignLeft)
+        self.hBoxLayout.addWidget(self.iconLabel, 0, Qt.AlignmentFlag.AlignLeft)
         self.hBoxLayout.addSpacing(16)
 
         self.hBoxLayout.addLayout(self.vBoxLayout)
-        self.vBoxLayout.addWidget(self.titleLabel, 0, Qt.AlignLeft)
-        self.vBoxLayout.addWidget(self.contentLabel, 0, Qt.AlignLeft)
+        self.vBoxLayout.addWidget(self.titleLabel, 0, Qt.AlignmentFlag.AlignLeft)
+        self.vBoxLayout.addWidget(self.contentLabel, 0, Qt.AlignmentFlag.AlignLeft)
 
         self.hBoxLayout.addSpacing(16)
         self.hBoxLayout.addStretch(1)
 
-        self.contentLabel.setObjectName('contentLabel')
+        self.contentLabel.setObjectName("contentLabel")
         FluentStyleSheet.SETTING_CARD.apply(self)
 
-    def setTitle(self, title: str):
-        """ set the title of card """
+    def setTitle(self, title: str) -> None:
+        """set the title of card"""
         self.titleLabel.setText(title)
 
-    def setContent(self, content: str):
-        """ set the content of card """
+    def setContent(self, content: str) -> None:
+        """set the content of card"""
         self.contentLabel.setText(content)
         self.contentLabel.setVisible(bool(content))
 
-    def setValue(self, value):
-        """ set the value of config item """
-        pass
+    def setValue(self, value: Any) -> None:
+        """set the value of config item"""
 
-    def setIconSize(self, width: int, height: int):
-        """ set the icon fixed size """
+    def setIconSize(self, width: int, height: int) -> None:
+        """set the icon fixed size"""
         self.iconLabel.setFixedSize(width, height)
 
-    def paintEvent(self, e):
+    def paintEvent(self, e: QPaintEvent) -> None:
         painter = QPainter(self)
         painter.setRenderHints(QPainter.Antialiasing)
 
@@ -111,17 +112,26 @@ class SettingCard(QFrame):
             painter.setBrush(QColor(255, 255, 255, 170))
             painter.setPen(QColor(0, 0, 0, 19))
 
-        painter.drawRoundedRect(self.rect().adjusted(1, 1, -1, -1), 6, 6)
-
+        painter.drawRoundedRect(
+            self.rect().adjusted(1, 1, -1, -1),
+            6,
+            6,
+        )
 
 
 class SwitchSettingCard(SettingCard):
-    """ Setting card with switch button """
+    """Setting card with switch button"""
 
     checkedChanged = pyqtSignal(bool)
 
-    def __init__(self, icon: Union[str, QIcon, FluentIconBase], title, content=None,
-                 configItem: ConfigItem = None, parent=None):
+    def __init__(
+        self,
+        icon: Union[str, QIcon, FluentIconBase],
+        title: str,
+        content: Optional[str] = None,
+        configItem: Optional[ConfigItem] = None,
+        parent: Optional[QWidget] = None,
+    ) -> None:
         """
         Parameters
         ----------
@@ -142,45 +152,50 @@ class SwitchSettingCard(SettingCard):
         """
         super().__init__(icon, title, content, parent)
         self.configItem = configItem
-        self.switchButton = SwitchButton(
-            self.tr('Off'), self, IndicatorPosition.RIGHT)
+        self.switchButton = SwitchButton(self.tr("Off"), self, IndicatorPosition.RIGHT)
 
         if configItem:
             self.setValue(qconfig.get(configItem))
             configItem.valueChanged.connect(self.setValue)
 
         # add switch button to layout
-        self.hBoxLayout.addWidget(self.switchButton, 0, Qt.AlignRight)
+        self.hBoxLayout.addWidget(self.switchButton, 0, Qt.AlignmentFlag.AlignRight)
         self.hBoxLayout.addSpacing(16)
 
         self.switchButton.checkedChanged.connect(self.__onCheckedChanged)
 
-    def __onCheckedChanged(self, isChecked: bool):
-        """ switch button checked state changed slot """
+    def __onCheckedChanged(self, isChecked: bool) -> None:
+        """switch button checked state changed slot"""
         self.setValue(isChecked)
         self.checkedChanged.emit(isChecked)
 
-    def setValue(self, isChecked: bool):
+    def setValue(self, value: bool) -> None:
         if self.configItem:
-            qconfig.set(self.configItem, isChecked)
+            qconfig.set(self.configItem, value)
 
-        self.switchButton.setChecked(isChecked)
-        self.switchButton.setText(
-            self.tr('On') if isChecked else self.tr('Off'))
+        self.switchButton.setChecked(value)
+        self.switchButton.setText(self.tr("On") if value else self.tr("Off"))
 
-    def setChecked(self, isChecked: bool):
+    def setChecked(self, isChecked: bool) -> None:
         self.setValue(isChecked)
 
-    def isChecked(self):
+    def isChecked(self) -> bool:
         return self.switchButton.isChecked()
 
 
 class RangeSettingCard(SettingCard):
-    """ Setting card with a slider """
+    """Setting card with a slider"""
 
     valueChanged = pyqtSignal(int)
 
-    def __init__(self, configItem, icon: Union[str, QIcon, FluentIconBase], title, content=None, parent=None):
+    def __init__(
+        self,
+        configItem,
+        icon: Union[str, QIcon, FluentIconBase],
+        title: str,
+        content: Optional[str] = None,
+        parent: Optional[QWidget] = None,
+    ) -> None:
         """
         Parameters
         ----------
@@ -201,7 +216,7 @@ class RangeSettingCard(SettingCard):
         """
         super().__init__(icon, title, content, parent)
         self.configItem = configItem
-        self.slider = Slider(Qt.Horizontal, self)
+        self.slider = Slider(Qt.Orientation.Horizontal, self)
         self.valueLabel = QLabel(self)
         self.slider.setMinimumWidth(268)
 
@@ -211,21 +226,21 @@ class RangeSettingCard(SettingCard):
         self.valueLabel.setNum(configItem.value)
 
         self.hBoxLayout.addStretch(1)
-        self.hBoxLayout.addWidget(self.valueLabel, 0, Qt.AlignRight)
+        self.hBoxLayout.addWidget(self.valueLabel, 0, Qt.AlignmentFlag.AlignRight)
         self.hBoxLayout.addSpacing(6)
-        self.hBoxLayout.addWidget(self.slider, 0, Qt.AlignRight)
+        self.hBoxLayout.addWidget(self.slider, 0, Qt.AlignmentFlag.AlignRight)
         self.hBoxLayout.addSpacing(16)
 
-        self.valueLabel.setObjectName('valueLabel')
+        self.valueLabel.setObjectName("valueLabel")
         configItem.valueChanged.connect(self.setValue)
         self.slider.valueChanged.connect(self.__onValueChanged)
 
-    def __onValueChanged(self, value: int):
-        """ slider value changed slot """
+    def __onValueChanged(self, value: int) -> None:
+        """slider value changed slot"""
         self.setValue(value)
         self.valueChanged.emit(value)
 
-    def setValue(self, value):
+    def setValue(self, value: int) -> None:
         qconfig.set(self.configItem, value)
         self.valueLabel.setNum(value)
         self.valueLabel.adjustSize()
@@ -233,11 +248,18 @@ class RangeSettingCard(SettingCard):
 
 
 class PushSettingCard(SettingCard):
-    """ Setting card with a push button """
+    """Setting card with a push button"""
 
     clicked = pyqtSignal()
 
-    def __init__(self, text, icon: Union[str, QIcon, FluentIconBase], title, content=None, parent=None):
+    def __init__(
+        self,
+        text: str,
+        icon: Union[str, QIcon, FluentIconBase],
+        title: str,
+        content: Optional[str] = None,
+        parent: Optional[QWidget] = None,
+    ) -> None:
         """
         Parameters
         ----------
@@ -258,23 +280,38 @@ class PushSettingCard(SettingCard):
         """
         super().__init__(icon, title, content, parent)
         self.button = QPushButton(text, self)
-        self.hBoxLayout.addWidget(self.button, 0, Qt.AlignRight)
+        self.hBoxLayout.addWidget(self.button, 0, Qt.AlignmentFlag.AlignRight)
         self.hBoxLayout.addSpacing(16)
         self.button.clicked.connect(self.clicked)
 
 
 class PrimaryPushSettingCard(PushSettingCard):
-    """ Push setting card with primary color """
+    """Push setting card with primary color"""
 
-    def __init__(self, text, icon, title, content=None, parent=None):
+    def __init__(
+        self,
+        text: str,
+        icon,
+        title: str,
+        content: Optional[str] = None,
+        parent: Optional[QWidget] = None,
+    ) -> None:
         super().__init__(text, icon, title, content, parent)
-        self.button.setObjectName('primaryButton')
+        self.button.setObjectName("primaryButton")
 
 
 class HyperlinkCard(SettingCard):
-    """ Hyperlink card """
+    """Hyperlink card"""
 
-    def __init__(self, url, text, icon: Union[str, QIcon, FluentIconBase], title, content=None, parent=None):
+    def __init__(
+        self,
+        url: str,
+        text: str,
+        icon: Union[str, QIcon, FluentIconBase],
+        title: str,
+        content: Optional[str] = None,
+        parent: Optional[QWidget] = None,
+    ) -> None:
         """
         Parameters
         ----------
@@ -301,44 +338,43 @@ class HyperlinkCard(SettingCard):
         """
         super().__init__(icon, title, content, parent)
         self.linkButton = HyperlinkButton(url, text, self)
-        self.hBoxLayout.addWidget(self.linkButton, 0, Qt.AlignRight)
+        self.hBoxLayout.addWidget(self.linkButton, 0, Qt.AlignmentFlag.AlignRight)
         self.hBoxLayout.addSpacing(16)
 
 
 class ColorPickerButton(QToolButton):
-    """ Color picker button """
+    """Color picker button"""
 
     colorChanged = pyqtSignal(QColor)
 
-    def __init__(self, color: QColor, title: str, parent=None, enableAlpha=False):
+    def __init__(self, color: QColor, title: str, parent: Optional[QWidget] = None, enableAlpha: bool = False) -> None:
         super().__init__(parent=parent)
         self.title = title
         self.enableAlpha = enableAlpha
         self.setFixedSize(96, 32)
-        self.setAttribute(Qt.WA_TranslucentBackground)
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
 
         self.setColor(color)
-        self.setCursor(Qt.PointingHandCursor)
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
         self.clicked.connect(self.__showColorDialog)
 
-    def __showColorDialog(self):
-        """ show color dialog """
-        w = ColorDialog(self.color, self.tr(
-            'Choose ')+self.title, self.window(), self.enableAlpha)
+    def __showColorDialog(self) -> None:
+        """show color dialog"""
+        w = ColorDialog(self.color, self.tr("Choose ") + self.title, self.window(), self.enableAlpha)
         w.colorChanged.connect(self.__onColorChanged)
         w.exec()
 
-    def __onColorChanged(self, color):
-        """ color changed slot """
+    def __onColorChanged(self, color) -> None:
+        """color changed slot"""
         self.setColor(color)
         self.colorChanged.emit(color)
 
-    def setColor(self, color):
-        """ set color """
+    def setColor(self, color) -> None:
+        """set color"""
         self.color = QColor(color)
         self.update()
 
-    def paintEvent(self, e):
+    def paintEvent(self, e: QPaintEvent) -> None:
         painter = QPainter(self)
         painter.setRenderHints(QPainter.Antialiasing)
         pc = QColor(255, 255, 255, 10) if isDarkTheme() else QColor(234, 234, 234)
@@ -353,12 +389,19 @@ class ColorPickerButton(QToolButton):
 
 
 class ColorSettingCard(SettingCard):
-    """ Setting card with color picker """
+    """Setting card with color picker"""
 
     colorChanged = pyqtSignal(QColor)
 
-    def __init__(self, configItem, icon: Union[str, QIcon, FluentIconBase],
-                 title: str, content: str = None, parent=None, enableAlpha=False):
+    def __init__(
+        self,
+        configItem,
+        icon: Union[str, QIcon, FluentIconBase],
+        title: str,
+        content: Optional[str] = None,
+        parent: Optional[QWidget] = None,
+        enableAlpha: bool = False,
+    ) -> None:
         """
         Parameters
         ----------
@@ -382,26 +425,33 @@ class ColorSettingCard(SettingCard):
         """
         super().__init__(icon, title, content, parent)
         self.configItem = configItem
-        self.colorPicker = ColorPickerButton(
-            qconfig.get(configItem), title, self, enableAlpha)
-        self.hBoxLayout.addWidget(self.colorPicker, 0, Qt.AlignRight)
+        self.colorPicker = ColorPickerButton(qconfig.get(configItem), title, self, enableAlpha)
+        self.hBoxLayout.addWidget(self.colorPicker, 0, Qt.AlignmentFlag.AlignRight)
         self.hBoxLayout.addSpacing(16)
         self.colorPicker.colorChanged.connect(self.__onColorChanged)
         configItem.valueChanged.connect(self.setValue)
 
-    def __onColorChanged(self, color: QColor):
+    def __onColorChanged(self, color: QColor) -> None:
         qconfig.set(self.configItem, color)
         self.colorChanged.emit(color)
 
-    def setValue(self, color: QColor):
-        self.colorPicker.setColor(color)
-        qconfig.set(self.configItem, color)
+    def setValue(self, value: QColor) -> None:
+        self.colorPicker.setColor(value)
+        qconfig.set(self.configItem, value)
 
 
 class ComboBoxSettingCard(SettingCard):
-    """ Setting card with a combo box """
+    """Setting card with a combo box"""
 
-    def __init__(self, configItem: OptionsConfigItem, icon: Union[str, QIcon, FluentIconBase], title, content=None, texts=None, parent=None):
+    def __init__(
+        self,
+        configItem: OptionsConfigItem,
+        icon: Union[str, QIcon, FluentIconBase],
+        title: str,
+        content: Optional[str] = None,
+        texts: Optional[List[str]] = None,
+        parent: Optional[QWidget] = None,
+    ) -> None:
         """
         Parameters
         ----------
@@ -426,10 +476,10 @@ class ComboBoxSettingCard(SettingCard):
         super().__init__(icon, title, content, parent)
         self.configItem = configItem
         self.comboBox = ComboBox(self)
-        self.hBoxLayout.addWidget(self.comboBox, 0, Qt.AlignRight)
+        self.hBoxLayout.addWidget(self.comboBox, 0, Qt.AlignmentFlag.AlignRight)
         self.hBoxLayout.addSpacing(16)
 
-        self.optionToText = {o: t for o, t in zip(configItem.options, texts)}
+        self.optionToText = dict(zip(configItem.options, texts))
         for text, option in zip(texts, configItem.options):
             self.comboBox.addItem(text, userData=option)
 
@@ -437,11 +487,10 @@ class ComboBoxSettingCard(SettingCard):
         self.comboBox.currentIndexChanged.connect(self._onCurrentIndexChanged)
         configItem.valueChanged.connect(self.setValue)
 
-    def _onCurrentIndexChanged(self, index: int):
-
+    def _onCurrentIndexChanged(self, index: int) -> None:
         qconfig.set(self.configItem, self.comboBox.itemData(index))
 
-    def setValue(self, value):
+    def setValue(self, value) -> None:
         if value not in self.optionToText:
             return
 

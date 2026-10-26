@@ -1,8 +1,8 @@
-# coding:utf-8
-from typing import Union
+from typing import List, Optional, Union
+
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import QButtonGroup, QLabel
+from PyQt5.QtWidgets import QButtonGroup, QLabel, QWidget
 
 from ...common.config import OptionsConfigItem, qconfig
 from ...common.icon import FluentIconBase
@@ -11,11 +11,19 @@ from .expand_setting_card import ExpandSettingCard
 
 
 class OptionsSettingCard(ExpandSettingCard):
-    """ setting card with a group of options """
+    """setting card with a group of options"""
 
     optionChanged = pyqtSignal(OptionsConfigItem)
 
-    def __init__(self, configItem, icon: Union[str, QIcon, FluentIconBase], title, content=None, texts=None, parent=None):
+    def __init__(
+        self,
+        configItem,
+        icon: Union[str, QIcon, FluentIconBase],
+        title: str,
+        content: Optional[str] = None,
+        texts: Optional[List[str]] = None,
+        parent: Optional[QWidget] = None,
+    ) -> None:
         """
         Parameters
         ----------
@@ -61,8 +69,8 @@ class OptionsSettingCard(ExpandSettingCard):
         configItem.valueChanged.connect(self.setValue)
         self.buttonGroup.buttonClicked.connect(self.__onButtonClicked)
 
-    def __onButtonClicked(self, button: RadioButton):
-        """ button clicked slot """
+    def __onButtonClicked(self, button: RadioButton) -> None:
+        """button clicked slot"""
         if button.text() == self.choiceLabel.text():
             return
 
@@ -73,8 +81,8 @@ class OptionsSettingCard(ExpandSettingCard):
         self.choiceLabel.adjustSize()
         self.optionChanged.emit(self.configItem)
 
-    def setValue(self, value):
-        """ select button according to the value """
+    def setValue(self, value) -> None:
+        """select button according to the value"""
         qconfig.set(self.configItem, value)
 
         for button in self.buttonGroup.buttons():
