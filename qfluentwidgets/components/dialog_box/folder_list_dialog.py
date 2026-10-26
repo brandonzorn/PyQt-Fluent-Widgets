@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Optional
 
-from PyQt5.QtCore import pyqtSignal, Qt
+from PyQt5.QtCore import pyqtSignal, QEvent, Qt
 from PyQt5.QtGui import QBrush, QColor, QFont, QFontMetrics, QMouseEvent, QPainter, QPaintEvent, QPen, QPixmap
 from PyQt5.QtWidgets import QApplication, QFileDialog, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
 

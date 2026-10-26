@@ -1,6 +1,6 @@
 from typing import Optional
 
-from PyQt5.QtCore import pyqtSignal, QEvent, Qt
+from PyQt5.QtCore import pyqtSignal, QEvent, QObject, Qt
 from PyQt5.QtGui import QColor
 from PyQt5.QtWidgets import QFrame, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
 
@@ -163,7 +163,7 @@ class MessageBox(MaskDialogBase, Ui_MessageBox):
             self.contentLabel.y() + self.contentLabel.height() + 105,
         )
 
-    def eventFilter(self, obj, e: QEvent) -> bool:
+    def eventFilter(self, obj: QObject, e: QEvent) -> bool:
         if obj is self.window() and e.type() == QEvent.Type.Resize:
             self._adjustText()
         return super().eventFilter(obj, e)

@@ -41,7 +41,8 @@ class MessageDialog(MaskDialogBase):
         """initialize layout"""
         self.contentLabel.adjustSize()
         self.widget.setFixedSize(
-            48 + self.contentLabel.width(), self.contentLabel.y() + self.contentLabel.height() + 92
+            48 + self.contentLabel.width(),
+            self.contentLabel.y() + self.contentLabel.height() + 92,
         )
         self.yesButton.resize((self.widget.width() - 54) // 2, 32)
         self.cancelButton.resize(self.yesButton.width(), 32)

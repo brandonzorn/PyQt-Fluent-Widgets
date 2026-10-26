@@ -1,7 +1,7 @@
 from typing import Optional
 
-from PyQt5.QtCore import QEasingCurve, QEvent, QPoint, QPropertyAnimation, Qt
-from PyQt5.QtGui import QColor, QResizeEvent
+from PyQt5.QtCore import QEasingCurve, QEvent, QObject, QPoint, QPropertyAnimation, Qt
+from PyQt5.QtGui import QColor, QResizeEvent, QShowEvent
 from PyQt5.QtWidgets import QDialog, QFrame, QGraphicsDropShadowEffect, QGraphicsOpacityEffect, QHBoxLayout, QWidget
 
 from ...common.config import isDarkTheme
@@ -98,7 +98,7 @@ class MaskDialogBase(QDialog):
     def resizeEvent(self, e: QResizeEvent) -> None:
         self.windowMask.resize(self.size())
 
-    def eventFilter(self, obj, e: QEvent) -> bool:
+    def eventFilter(self, obj: QObject, e: QEvent) -> bool:
         if obj is self.window():
             if e.type() == QEvent.Type.Resize:
                 re = QResizeEvent(e)

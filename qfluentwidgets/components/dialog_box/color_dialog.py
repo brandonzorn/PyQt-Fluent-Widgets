@@ -1,10 +1,11 @@
-from typing import Optional
+from typing import Optional, Union
 
 from PyQt5.QtCore import pyqtSignal, QPoint, QRegExp, Qt
 from PyQt5.QtGui import (
     QBrush,
     QColor,
     QIntValidator,
+    QMouseEvent,
     QPainter,
     QPaintEvent,
     QPen,
@@ -37,7 +38,7 @@ class HuePanel(QWidget):
     def mouseMoveEvent(self, e: QMouseEvent) -> None:
         self.setPickerPosition(e.pos())
 
-    def setPickerPosition(self, pos) -> None:
+    def setPickerPosition(self, pos: QPoint) -> None:
         """set the position of"""
         self.pickerPos = pos
         self.color.setHsv(
@@ -56,14 +57,14 @@ class HuePanel(QWidget):
         self.update()
 
     @property
-    def hue(self):
+    def hue(self) -> int:
         return self.color.hue()
 
     @property
-    def saturation(self):
+    def saturation(self) -> int:
         return self.color.saturation()
 
-    def paintEvent(self, e):
+    def paintEvent(self, e: QPaintEvent) -> None:
         painter = QPainter(self)
         painter.setRenderHints(QPainter.Antialiasing | QPainter.SmoothPixmapTransform)
 
@@ -73,10 +74,9 @@ class HuePanel(QWidget):
         painter.drawRoundedRect(self.rect(), 5.6, 5.6)
 
         # draw picker
+        color = QColor(255, 253, 254)
         if self.saturation > 153 or 40 < self.hue < 180:
             color = Qt.GlobalColor.black
-        else:
-            color = QColor(255, 253, 254)
 
         painter.setPen(QPen(color, 3))
         painter.setBrush(Qt.BrushStyle.NoBrush)
@@ -88,7 +88,7 @@ class BrightnessSlider(ClickableSlider):
 
     colorChanged = pyqtSignal(QColor)
 
-    def __init__(self, color, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, color: QColor, parent: Optional[QWidget] = None) -> None:
         super().__init__(Qt.Orientation.Horizontal, parent)
         self.setRange(0, 255)
         self.setSingleStep(1)
@@ -114,7 +114,7 @@ class BrightnessSlider(ClickableSlider):
 class ColorCard(QWidget):
     """Color card"""
 
-    def __init__(self, color, parent: Optional[QWidget] = None, enableAlpha: bool = False) -> None:
+    def __init__(self, color: QColor, parent: Optional[QWidget] = None, enableAlpha: bool = False) -> None:
         super().__init__(parent)
         self.setFixedSize(44, 128)
         self.setColor(color)
@@ -133,7 +133,7 @@ class ColorCard(QWidget):
         painter.end()
         return pixmap
 
-    def setColor(self, color) -> None:
+    def setColor(self, color: QColor) -> None:
         """set the color of card"""
         self.color = QColor(color)
         self.update()
@@ -178,7 +178,7 @@ class ColorLineEdit(LineEdit):
 class HexColorLineEdit(ColorLineEdit):
     """Hex color line edit"""
 
-    def __init__(self, color, parent: Optional[QWidget] = None, enableAlpha: bool = False) -> None:
+    def __init__(self, color: QColor, parent: Optional[QWidget] = None, enableAlpha: bool = False) -> None:
         self.colorFormat = QColor.HexArgb if enableAlpha else QColor.HexRgb
         super().__init__(QColor(color).name(self.colorFormat)[1:], parent)
 
@@ -192,7 +192,7 @@ class HexColorLineEdit(ColorLineEdit):
         self.prefixLabel.move(7, 2)
         self.prefixLabel.setObjectName("prefixLabel")
 
-    def setColor(self, color) -> None:
+    def setColor(self, color: QColor) -> None:
         """set color"""
         self.setText(color.name(self.colorFormat)[1:])
 
@@ -224,7 +224,7 @@ class ColorDialog(MaskDialogBase):
 
     def __init__(
         self,
-        color,
+        color: Union[str, QColor, Qt.GlobalColor],
         title: str,
         parent: Optional[QWidget] = None,
         enableAlpha: bool = False,
