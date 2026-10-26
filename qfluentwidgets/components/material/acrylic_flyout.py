@@ -1,63 +1,71 @@
-# coding:utf-8
 from typing import Union
-from PyQt5.QtCore import QPoint, Qt, QRect, QRectF
-from PyQt5.QtGui import QPixmap, QPainter, QColor, QPainterPath, QIcon, QImage
+
+from PyQt5.QtCore import QPoint, QRect, QRectF, Qt
+from PyQt5.QtGui import QIcon, QImage, QPainter, QPainterPath, QPaintEvent, QPixmap
 from PyQt5.QtWidgets import QWidget
 
-from ...common.style_sheet import isDarkTheme
 from ...common.icon import FluentIconBase
-from ..widgets.flyout import FlyoutAnimationType, FlyoutViewBase, FlyoutView, Flyout, FlyoutAnimationManager
+from ..widgets.flyout import Flyout, FlyoutAnimationManager, FlyoutAnimationType, FlyoutView, FlyoutViewBase
 from .acrylic_widget import AcrylicWidget
 
 
 class AcrylicFlyoutViewBase(AcrylicWidget, FlyoutViewBase):
-    """ Acrylic flyout view base """
+    """Acrylic flyout view base"""
 
-    def acrylicClipPath(self):
+    def acrylicClipPath(self) -> QPainterPath:
         path = QPainterPath()
         path.addRoundedRect(QRectF(self.rect().adjusted(1, 1, -1, -1)), 8, 8)
         return path
 
-    def paintEvent(self, e):
+    def paintEvent(self, e: QPaintEvent) -> None:
         painter = QPainter(self)
         painter.setRenderHints(QPainter.Antialiasing)
         self._drawAcrylic(painter)
 
         # draw border
-        painter.setBrush(Qt.NoBrush)
+        painter.setBrush(Qt.BrushStyle.NoBrush)
         painter.setPen(self.borderColor())
         rect = QRectF(self.rect()).adjusted(1, 1, -1, -1)
         painter.drawRoundedRect(rect, 8, 8)
 
 
 class AcrylicFlyoutView(AcrylicWidget, FlyoutView):
-    """ Acrylic flyout view """
+    """Acrylic flyout view"""
 
-    def acrylicClipPath(self):
+    def acrylicClipPath(self) -> QPainterPath:
         path = QPainterPath()
         path.addRoundedRect(QRectF(self.rect().adjusted(1, 1, -1, -1)), 8, 8)
         return path
 
-    def paintEvent(self, e):
+    def paintEvent(self, e: QPaintEvent) -> None:
         painter = QPainter(self)
         painter.setRenderHints(QPainter.Antialiasing)
         self._drawAcrylic(painter)
 
         # draw border
-        painter.setBrush(Qt.NoBrush)
+        painter.setBrush(Qt.BrushStyle.NoBrush)
         painter.setPen(self.borderColor())
         rect = self.rect().adjusted(1, 1, -1, -1)
         painter.drawRoundedRect(rect, 8, 8)
 
 
 class AcrylicFlyout(Flyout):
-    """ Acrylic flyout """
+    """Acrylic flyout"""
 
     @classmethod
-    def create(cls, title: str, content: str, icon: Union[FluentIconBase, QIcon, str] = None,
-               image: Union[str, QPixmap, QImage] = None, isClosable=False, target: Union[QWidget, QPoint] = None,
-               parent=None, aniType=FlyoutAnimationType.PULL_UP, isDeleteOnClose=True):
-        """ create and show a flyout using the default view
+    def create(
+        cls,
+        title: str,
+        content: str,
+        icon: Union[FluentIconBase, QIcon, str] = None,
+        image: Union[str, QPixmap, QImage] = None,
+        isClosable: bool = False,
+        target: Union[QWidget, QPoint] = None,
+        parent=None,
+        aniType: FlyoutAnimationType = FlyoutAnimationType.PULL_UP,
+        isDeleteOnClose: bool = True,
+    ):
+        """create and show a flyout using the default view
 
         Parameters
         ----------
@@ -93,8 +101,8 @@ class AcrylicFlyout(Flyout):
         view.closed.connect(w.close)
         return w
 
-    def exec(self, pos: QPoint, aniType=FlyoutAnimationType.PULL_UP):
-        """ show calendar view """
+    def exec(self, pos: QPoint, aniType: FlyoutAnimationType = FlyoutAnimationType.PULL_UP) -> None:
+        """show calendar view"""
         self.aniManager = FlyoutAnimationManager.make(aniType, self)
 
         if isinstance(self.view, AcrylicWidget):

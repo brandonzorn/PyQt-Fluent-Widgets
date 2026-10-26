@@ -1,21 +1,17 @@
-# coding:utf-8
-from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtGui import QPainterPath, QPainter, QColor
-from PyQt5.QtWidgets import QWidget
+from PyQt5.QtGui import QColor, QPainter, QPainterPath, QPaintEvent
 
-from ..widgets.flyout import FlyoutViewBase
-from ..widgets.acrylic_label import AcrylicBrush
 from ...common.style_sheet import isDarkTheme
+from ..widgets.acrylic_label import AcrylicBrush
 
 
 class AcrylicWidget:
-    """ Acrylic widget """
+    """Acrylic widget"""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.acrylicBrush = AcrylicBrush(self, 30)
 
-    def _updateAcrylicColor(self):
+    def _updateAcrylicColor(self) -> None:
         if isDarkTheme():
             tintColor = QColor(32, 32, 32, 200)
             luminosityColor = QColor(0, 0, 0, 0)
@@ -26,10 +22,10 @@ class AcrylicWidget:
         self.acrylicBrush.tintColor = tintColor
         self.acrylicBrush.luminosityColor = luminosityColor
 
-    def acrylicClipPath(self):
+    def acrylicClipPath(self) -> QPainterPath:
         return QPainterPath()
 
-    def _drawAcrylic(self, painter: QPainter):
+    def _drawAcrylic(self, painter: QPainter) -> None:
         path = self.acrylicClipPath()
         if not path.isEmpty():
             self.acrylicBrush.clipPath = self.acrylicClipPath()
@@ -37,7 +33,7 @@ class AcrylicWidget:
         self._updateAcrylicColor()
         self.acrylicBrush.paint()
 
-    def paintEvent(self, e):
+    def paintEvent(self, e: QPaintEvent) -> None:
         painter = QPainter(self)
         painter.setRenderHints(QPainter.Antialiasing | QPainter.SmoothPixmapTransform)
 
