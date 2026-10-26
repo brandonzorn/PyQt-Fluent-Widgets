@@ -128,7 +128,7 @@ class FlowLayout(QLayout):
 
         return None
 
-    def removeWidget(self, widget) -> Optional[QWidget]:
+    def removeWidget(self, widget: QWidget) -> Optional[QWidget]:
         for i, item in enumerate(self._items):
             if item.widget() is widget:
                 return self.takeAt(i)
@@ -146,7 +146,7 @@ class FlowLayout(QLayout):
             if w:
                 w.deleteLater()
 
-    def expandingDirections(self):
+    def expandingDirections(self) -> Qt.Orientation:
         return Qt.Orientation(0)
 
     def hasHeightForWidth(self) -> bool:
@@ -206,7 +206,7 @@ class FlowLayout(QLayout):
 
         return super().eventFilter(obj, event)
 
-    def _doLayout(self, rect: QRect, move: bool):
+    def _doLayout(self, rect: QRect, move: bool) -> int:
         """adjust widgets position according to the window size"""
         aniRestart = False
         margin = self.contentsMargins()
@@ -273,7 +273,7 @@ class AdaptiveFlowLayout(FlowLayout):
     def widgetMaximumWidth(self) -> int:
         return self._widgetMaximumWidth
 
-    def _doLayout(self, rect: QRect, move: bool):
+    def _doLayout(self, rect: QRect, move: bool) -> int:
         aniRestart = False
         margin = self.contentsMargins()
         spaceX = self.horizontalSpacing()
@@ -289,10 +289,9 @@ class AdaptiveFlowLayout(FlowLayout):
             cardsPerRow = 1
 
         # Calculate card width to fill each row
+        cardWidth = availableWidth
         if cardsPerRow > 1:
             cardWidth = (availableWidth - (cardsPerRow - 1) * spaceX) // cardsPerRow
-        else:
-            cardWidth = availableWidth
 
         # Apply maximum width limit
         if self._widgetMaximumWidth is not None and cardWidth > self._widgetMaximumWidth:

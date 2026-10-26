@@ -1,6 +1,6 @@
 from typing import Optional
 
-from PyQt5.QtCore import QEvent, QPoint, QRect, QSize, Qt
+from PyQt5.QtCore import QEvent, QObject, QPoint, QRect, QSize, Qt
 from PyQt5.QtGui import QResizeEvent
 from PyQt5.QtWidgets import QLayout, QLayoutItem, QWidget
 
@@ -86,7 +86,7 @@ class ExpandLayout(QLayout):
 
         return y - rect.y()
 
-    def eventFilter(self, obj, e: QEvent):
+    def eventFilter(self, obj: QObject, e: QEvent) -> bool:
         if obj in self.__widgets and e.type() == QEvent.Type.Resize:
             re = QResizeEvent(e)
             ds: QSize = re.size() - re.oldSize()
