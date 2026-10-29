@@ -190,9 +190,9 @@ msgstr ""
 #: ../../source/autoapi/qfluentwidgets/components/date_time/date_picker/index.rst:101
 #: 5784a286395847b2bd47f29b0c9491cf
 msgid ""
-"the format of date, could be `DatePicker.MM_DD_YYYY` or "
-"`DatePicker.YYYY_MM_DD`"
-msgstr "日期格式，可以是 `DatePicker.MM_DD_YYYY` 或者 `DatePicker.YYYY_MM_DD`"
+"the format of date, could be `DatePicker.DateFormat.MM_DD_YYYY` or "
+"`DatePicker.DateFormat.YYYY_MM_DD`"
+msgstr "日期格式，可以是 `DatePicker.DateFormat.MM_DD_YYYY` 或者 `DatePicker.DateFormat.YYYY_MM_DD`"
 
 #: ../../source/autoapi/qfluentwidgets/components/date_time/date_picker/index.rst:106
 #: 80770ecddfd7482287092a14a4643b1f

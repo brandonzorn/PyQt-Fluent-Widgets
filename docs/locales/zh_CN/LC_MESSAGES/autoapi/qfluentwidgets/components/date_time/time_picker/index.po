@@ -46,8 +46,8 @@ msgstr "时间选择器基类"
 #: ../../source/autoapi/qfluentwidgets/components/date_time/time_picker/index.rst:23:<autosummary>:1
 #: 36c367176c6745c885755117dd5ac137
 msgid ""
-":py:obj:`MiniuteFormatter "
-"<qfluentwidgets.components.date_time.time_picker.MiniuteFormatter>`\\"
+":py:obj:`MinuteFormatter "
+"<qfluentwidgets.components.date_time.time_picker.MinuteFormatter>`\\"
 msgstr ""
 
 #: ../../source/autoapi/qfluentwidgets/components/date_time/time_picker/index.rst:56

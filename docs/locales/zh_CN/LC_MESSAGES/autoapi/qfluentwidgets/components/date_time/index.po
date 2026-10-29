@@ -192,8 +192,8 @@ msgstr ""
 #: ../../source/autoapi/qfluentwidgets/components/date_time/index.rst:120
 #: fb3ef9762dff4f3ca1fd3a690df2186d
 msgid ""
-"the format of date, could be `DatePicker.MM_DD_YYYY` or "
-"`DatePicker.YYYY_MM_DD`"
+"the format of date, could be `DatePicker.DateFormat.MM_DD_YYYY` or "
+"`DatePicker.DateFormat.YYYY_MM_DD`"
 msgstr ""
 
 #: ../../source/autoapi/qfluentwidgets/components/date_time/index.rst:125
