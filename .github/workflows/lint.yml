@@ -1,0 +1,23 @@
+name: Lint Python Package
+
+on:
+  push:
+    branches: [ "master", "PyQt5", "PyQt6", "PySide2", "PySide6" ]
+  pull_request:
+    branches: [ "master", "PyQt5", "PyQt6", "PySide2", "PySide6" ]
+
+permissions:
+  contents: read
+
+jobs:
+  ruff-lint:
+    runs-on: ubuntu-latest
+    container: python:3.9-alpine
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install dependencies
+        run: pip install ruff
+      - name: Run Ruff check
+        run: ruff check ./qfluentwidgets
+      - name: Run Ruff format
+        run: ruff format --diff ./qfluentwidgets
