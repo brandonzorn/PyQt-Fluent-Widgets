@@ -1,30 +1,53 @@
-# coding: utf-8
+from collections import Counter, defaultdict
 from math import ceil
-from collections import defaultdict, Counter
-from typing import Tuple, Type
+from typing import Optional, Type
 
-from PyQt5.QtCore import (Qt, QRectF, pyqtSignal, QSize, QModelIndex, QDate, QCalendar, QEasingCurve, QPropertyAnimation,
-                          QParallelAnimationGroup, QPoint, QRect, QStringListModel)
-from PyQt5.QtGui import QPainter, QColor, QCursor
-from PyQt5.QtWidgets import (QApplication, QFrame, QPushButton, QHBoxLayout, QVBoxLayout, QListWidget,
-                             QListWidgetItem, QStyledItemDelegate, QStyle, QStyleOptionViewItem,
-                             QLabel, QWidget, QStackedWidget, QGraphicsDropShadowEffect, QListView)
+from PyQt5.QtCore import (
+    pyqtSignal,
+    QCalendar,
+    QDate,
+    QEasingCurve,
+    QModelIndex,
+    QParallelAnimationGroup,
+    QPoint,
+    QPropertyAnimation,
+    QRect,
+    QRectF,
+    QSize,
+    Qt,
+)
+from PyQt5.QtGui import QColor, QMouseEvent, QPainter, QPaintEvent, QWheelEvent
+from PyQt5.QtWidgets import (
+    QFrame,
+    QGraphicsDropShadowEffect,
+    QHBoxLayout,
+    QLabel,
+    QListWidget,
+    QListWidgetItem,
+    QPushButton,
+    QStackedWidget,
+    QStyle,
+    QStyledItemDelegate,
+    QStyleOptionViewItem,
+    QVBoxLayout,
+    QWidget,
+)
 
-from ...common.icon import FluentIcon as FIF
-from ...common.style_sheet import isDarkTheme, FluentStyleSheet, themeColor, ThemeColor
 from ...common.font import getFont
+from ...common.icon import FluentIcon as FIF
 from ...common.screen import getCurrentScreenGeometry
+from ...common.style_sheet import FluentStyleSheet, isDarkTheme, ThemeColor, themeColor
 from ..widgets.button import TransparentToolButton
 from ..widgets.scroll_bar import SmoothScrollBar
 
 
 class ScrollButton(TransparentToolButton):
-    """ Scroll button """
+    """Scroll button"""
 
     def _drawIcon(self, icon, painter: QPainter, rect: QRectF):
         pass
 
-    def paintEvent(self, e):
+    def paintEvent(self, e: QPaintEvent) -> None:
         super().paintEvent(e)
         painter = QPainter(self)
         painter.setRenderHints(QPainter.Antialiasing)
@@ -44,46 +67,45 @@ class ScrollButton(TransparentToolButton):
 
 
 class ScrollItemDelegate(QStyledItemDelegate):
-
-    def __init__(self, min, max):
+    def __init__(self, min_: int, max_: int) -> None:
         super().__init__()
-        self.setRange(min, max)
+        self.setRange(min_, max_)
         self.font = getFont()
         self.pressedIndex = QModelIndex()
         self.currentIndex = QModelIndex()
         self.selectedIndex = QModelIndex()
 
-    def setRange(self, min, max):
-        self.min = min
-        self.max = max
+    def setRange(self, min_: int, max_: int) -> None:
+        self.min = min_
+        self.max = max_
 
-    def setPressedIndex(self, index: QModelIndex):
+    def setPressedIndex(self, index: QModelIndex) -> None:
         self.pressedIndex = index
 
-    def setCurrentIndex(self, index: QModelIndex):
+    def setCurrentIndex(self, index: QModelIndex) -> None:
         self.currentIndex = index
 
-    def setSelectedIndex(self, index: QModelIndex):
+    def setSelectedIndex(self, index: QModelIndex) -> None:
         self.selectedIndex = index
 
-    def paint(self, painter, option, index):
+    def paint(self, painter: QPainter, option, index: QModelIndex) -> None:
         painter.setRenderHints(QPainter.Antialiasing | QPainter.TextAntialiasing)
         self._drawBackground(painter, option, index)
         self._drawText(painter, option, index)
 
-    def _drawBackground(self, painter: QPainter, option: QStyleOptionViewItem, index: QModelIndex):
+    def _drawBackground(self, painter: QPainter, option: QStyleOptionViewItem, index: QModelIndex) -> None:
         painter.save()
 
         # outer ring
         if index != self.selectedIndex:
-            painter.setPen(Qt.NoPen)
+            painter.setPen(Qt.PenStyle.NoPen)
         else:
             painter.setPen(themeColor())
 
         if index == self.currentIndex:
             if index == self.pressedIndex:
                 painter.setBrush(ThemeColor.LIGHT_2.color())
-            elif option.state & QStyle.State_MouseOver:
+            elif option.state & QStyle.StateFlag.State_MouseOver:
                 painter.setBrush(ThemeColor.LIGHT_1.color())
             else:
                 painter.setBrush(themeColor())
@@ -91,16 +113,16 @@ class ScrollItemDelegate(QStyledItemDelegate):
             c = 255 if isDarkTheme() else 0
             if index == self.pressedIndex:
                 painter.setBrush(QColor(c, c, c, 7))
-            elif option.state & QStyle.State_MouseOver:
+            elif option.state & QStyle.StateFlag.State_MouseOver:
                 painter.setBrush(QColor(c, c, c, 9))
             else:
-                painter.setBrush(Qt.transparent)
+                painter.setBrush(Qt.GlobalColor.transparent)
 
         m = self._itemMargin()
         painter.drawEllipse(option.rect.adjusted(m, m, -m, -m))
         painter.restore()
 
-    def _drawText(self, painter: QPainter, option: QStyleOptionViewItem, index: QModelIndex):
+    def _drawText(self, painter: QPainter, option: QStyleOptionViewItem, index: QModelIndex) -> None:
         painter.save()
         painter.setFont(self.font)
 
@@ -108,44 +130,49 @@ class ScrollItemDelegate(QStyledItemDelegate):
             c = 0 if isDarkTheme() else 255
             painter.setPen(QColor(c, c, c))
         else:
-            painter.setPen(Qt.white if isDarkTheme() else Qt.black)
-            if not (self.min <= index.data(Qt.UserRole) <= self.max or option.state & QStyle.State_MouseOver) or \
-                    index == self.pressedIndex:
+            painter.setPen(Qt.GlobalColor.white if isDarkTheme() else Qt.GlobalColor.black)
+            if (
+                not (
+                    self.min <= index.data(Qt.ItemDataRole.UserRole) <= self.max
+                    or option.state & QStyle.StateFlag.State_MouseOver
+                )
+                or index == self.pressedIndex
+            ):
                 painter.setOpacity(0.6)
 
-        text = index.data(Qt.DisplayRole)
-        painter.drawText(option.rect, Qt.AlignCenter, text)
+        text = index.data(Qt.ItemDataRole.DisplayRole)
+        painter.drawText(option.rect, Qt.AlignmentFlag.AlignCenter, text)
         painter.restore()
 
-    def _itemMargin(self):
+    def _itemMargin(self) -> int:
         return 0
 
 
 class YearScrollItemDelegate(ScrollItemDelegate):
-    """ Year scroll item delegate """
+    """Year scroll item delegate"""
 
-    def _itemMargin(self):
+    def _itemMargin(self) -> int:
         return 8
 
 
 class DayScrollItemDelegate(ScrollItemDelegate):
-    """ Day scroll item delegate """
+    """Day scroll item delegate"""
 
-    def _itemMargin(self):
+    def _itemMargin(self) -> int:
         return 3
 
 
 class ScrollViewBase(QListWidget):
-    """ Scroll view base class """
+    """Scroll view base class"""
 
     pageChanged = pyqtSignal(int)
 
-    def __init__(self, Delegate: Type[ScrollItemDelegate], parent=None):
+    def __init__(self, Delegate: Type[ScrollItemDelegate], parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
         self.cols = 4
         self.pageRows = 3
         self.currentPage = 0
-        self.vScrollBar = SmoothScrollBar(Qt.Vertical, self)
+        self.vScrollBar = SmoothScrollBar(Qt.Orientation.Vertical, self)
 
         self.delegate = Delegate(0, 0)
         self.currentDate = QDate.currentDate()
@@ -158,7 +185,7 @@ class ScrollViewBase(QListWidget):
         self._initItems()
         self.__initWidget()
 
-    def __initWidget(self):
+    def __initWidget(self) -> None:
         self.setSpacing(0)
         self.setMovement(QListWidget.Static)
         self.setGridSize(self.gridSize())
@@ -173,21 +200,24 @@ class ScrollViewBase(QListWidget):
 
         self.vScrollBar.setForceHidden(True)
         self.setVerticalScrollMode(self.ScrollPerPixel)
-        self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
 
-    def _onFirstScrollFinished(self):
+    def _onFirstScrollFinished(self) -> None:
         self.vScrollBar.setScrollAnimation(300, QEasingCurve.OutQuad)
         self.vScrollBar.ani.disconnect()
 
-    def scrollUp(self):
+    def scrollUp(self) -> None:
         self.scrollToPage(self.currentPage - 1)
 
-    def scrollDown(self):
+    def scrollDown(self) -> None:
         self.scrollToPage(self.currentPage + 1)
 
-    def scrollToPage(self, page: int):
-        if not 0 <= page <= ceil(self.model().rowCount() / (self.pageRows * self.cols)):
+    def scrollToPage(self, page: int) -> None:
+        model = self.model()
+        if model is None:
+            return
+        if not 0 <= page <= ceil(model.rowCount() / (self.pageRows * self.cols)):
             return
 
         self.currentPage = page
@@ -196,25 +226,25 @@ class ScrollViewBase(QListWidget):
         self.delegate.setRange(*self.currentPageRange())
         self.pageChanged.emit(page)
 
-    def currentPageRange(self):
-        return 0, 0
+    def currentPageRange(self) -> tuple[QDate, QDate]:
+        return QDate(), QDate()
 
-    def setDate(self, date: QDate):
+    def setDate(self, date: QDate) -> None:
         self.scrollToDate(date)
 
-    def scrollToDate(self, date: QDate):
+    def scrollToDate(self, date: QDate) -> None:
         pass
 
-    def _setPressedIndex(self, index):
+    def _setPressedIndex(self, index: QModelIndex) -> None:
         self.delegate.setPressedIndex(index)
         self.viewport().update()
 
-    def _setSelectedIndex(self, index):
+    def _setSelectedIndex(self, index: QModelIndex) -> None:
         self.delegate.setSelectedIndex(index)
         self.viewport().update()
 
-    def wheelEvent(self, e):
-        if self.vScrollBar.ani.state() == QPropertyAnimation.Running:
+    def wheelEvent(self, e: QWheelEvent) -> None:
+        if self.vScrollBar.ani.state() == QPropertyAnimation.State.Running:
             return
 
         if e.angleDelta().y() < 0:
@@ -222,12 +252,12 @@ class ScrollViewBase(QListWidget):
         else:
             self.scrollUp()
 
-    def mousePressEvent(self, e):
+    def mousePressEvent(self, e: QMouseEvent) -> None:
         super().mousePressEvent(e)
-        if e.button() == Qt.LeftButton and self.indexAt(e.pos()).row() >= 0:
+        if e.button() == Qt.MouseButton.LeftButton and self.indexAt(e.pos()).row() >= 0:
             self._setPressedIndex(self.currentIndex())
 
-    def mouseReleaseEvent(self, e):
+    def mouseReleaseEvent(self, e: QMouseEvent) -> None:
         super().mouseReleaseEvent(e)
         self._setPressedIndex(QModelIndex())
 
@@ -236,13 +266,13 @@ class ScrollViewBase(QListWidget):
 
 
 class CalendarViewBase(QFrame):
-    """ Calendar view base class """
+    """Calendar view base class"""
 
-    resetted = pyqtSignal()
+    reset = pyqtSignal()
     titleClicked = pyqtSignal()
     itemClicked = pyqtSignal(QDate)
 
-    def __init__(self, parent=None):
+    def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
 
         self.titleButton = QPushButton(self)
@@ -250,14 +280,14 @@ class CalendarViewBase(QFrame):
         self.upButton = ScrollButton(FIF.CARE_UP_SOLID, self)
         self.downButton = ScrollButton(FIF.CARE_DOWN_SOLID, self)
 
-        self.scrollView = None  # type: ScrollViewBase
+        self.scrollView: ScrollViewBase = None
 
         self.hBoxLayout = QHBoxLayout()
         self.vBoxLayout = QVBoxLayout(self)
 
         self.__initWidget()
 
-    def __initWidget(self):
+    def __initWidget(self) -> None:
         self.setFixedSize(314, 355)
         self.upButton.setFixedSize(32, 34)
         self.downButton.setFixedSize(32, 34)
@@ -266,82 +296,82 @@ class CalendarViewBase(QFrame):
 
         self.hBoxLayout.setContentsMargins(9, 8, 9, 8)
         self.hBoxLayout.setSpacing(7)
-        self.hBoxLayout.addWidget(self.titleButton, 1, Qt.AlignVCenter)
-        self.hBoxLayout.addWidget(self.resetButton, 0, Qt.AlignVCenter)
-        self.hBoxLayout.addWidget(self.upButton, 0, Qt.AlignVCenter)
-        self.hBoxLayout.addWidget(self.downButton, 0, Qt.AlignVCenter)
+        self.hBoxLayout.addWidget(self.titleButton, 1, Qt.AlignmentFlag.AlignVCenter)
+        self.hBoxLayout.addWidget(self.resetButton, 0, Qt.AlignmentFlag.AlignVCenter)
+        self.hBoxLayout.addWidget(self.upButton, 0, Qt.AlignmentFlag.AlignVCenter)
+        self.hBoxLayout.addWidget(self.downButton, 0, Qt.AlignmentFlag.AlignVCenter)
         self.setResetEnabled(False)
 
         self.vBoxLayout.setContentsMargins(0, 0, 0, 0)
         self.vBoxLayout.setSpacing(0)
         self.vBoxLayout.addLayout(self.hBoxLayout)
-        self.vBoxLayout.setAlignment(Qt.AlignTop)
+        self.vBoxLayout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
-        self.titleButton.setObjectName('titleButton')
+        self.titleButton.setObjectName("titleButton")
         FluentStyleSheet.CALENDAR_PICKER.apply(self)
 
         self.titleButton.clicked.connect(self.titleClicked)
-        self.resetButton.clicked.connect(self.resetted)
+        self.resetButton.clicked.connect(self.reset)
         self.upButton.clicked.connect(self._onScrollUp)
         self.downButton.clicked.connect(self._onScrollDown)
 
-    def setScrollView(self, view: ScrollViewBase):
+    def setScrollView(self, view: ScrollViewBase) -> None:
         self.scrollView = view
-        self.scrollView.itemClicked.connect(lambda i: self.itemClicked.emit(i.data(Qt.UserRole)))
+        self.scrollView.itemClicked.connect(lambda i: self.itemClicked.emit(i.data(Qt.ItemDataRole.UserRole)))
         self.vBoxLayout.addWidget(view)
         view.pageChanged.connect(self._updateTitle)
         self._updateTitle()
 
-    def setResetEnabled(self, isEnabled: bool):
+    def setResetEnabled(self, isEnabled: bool) -> None:
         self.resetButton.setVisible(isEnabled)
 
-    def isResetEnabled(self):
+    def isResetEnabled(self) -> bool:
         return self.resetButton.isVisible()
 
-    def setDate(self, date: QDate):
+    def setDate(self, date: QDate) -> None:
         self.scrollView.setDate(date)
         self._updateTitle()
 
-    def setTitle(self, title: str):
+    def setTitle(self, title: str) -> None:
         self.titleButton.setText(title)
 
     def currentPageDate(self) -> QDate:
         raise NotImplementedError
 
-    def _onScrollUp(self):
+    def _onScrollUp(self) -> None:
         self.scrollView.scrollUp()
         self._updateTitle()
 
-    def _onScrollDown(self):
+    def _onScrollDown(self) -> None:
         self.scrollView.scrollDown()
         self._updateTitle()
 
-    def _updateTitle(self):
+    def _updateTitle(self) -> None:
         pass
 
 
 class YearScrollView(ScrollViewBase):
-    """ Year scroll view """
+    """Year scroll view"""
 
-    def __init__(self, parent=None):
+    def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__(YearScrollItemDelegate, parent)
 
-    def _initItems(self):
-        years = range(self.minYear, self.maxYear+1)
+    def _initItems(self) -> None:
+        years = range(self.minYear, self.maxYear + 1)
         self.addItems([str(i) for i in years])
 
         for i, year in enumerate(years):
             item = self.item(i)
-            item.setData(Qt.UserRole, QDate(year, 1, 1))
+            item.setData(Qt.ItemDataRole.UserRole, QDate(year, 1, 1))
             item.setSizeHint(self.sizeHint())
             if year == self.currentDate.year():
                 self.delegate.setCurrentIndex(self.indexFromItem(item))
 
-    def scrollToDate(self, date: QDate):
+    def scrollToDate(self, date: QDate) -> None:
         page = (date.year() - self.minYear) // 12
         self.scrollToPage(page)
 
-    def currentPageRange(self):
+    def currentPageRange(self) -> tuple[QDate, QDate]:
         pageSize = self.pageRows * self.cols
         left = self.currentPage * pageSize + self.minYear
 
@@ -355,29 +385,38 @@ class YearScrollView(ScrollViewBase):
 
 
 class YearCalendarView(CalendarViewBase):
-    """ Year calendar view """
+    """Year calendar view"""
 
-    def __init__(self, parent=None):
+    def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
         self.setScrollView(YearScrollView(self))
         self.titleButton.setEnabled(False)
 
-    def _updateTitle(self):
+    def _updateTitle(self) -> None:
         left, right = self.scrollView.currentPageRange()
-        self.setTitle(f'{left.year()} - {right.year()}')
+        self.setTitle(f"{left.year()} - {right.year()}")
 
 
 class MonthScrollView(ScrollViewBase):
-    """ Month scroll view """
+    """Month scroll view"""
 
-    def __init__(self, parent=None):
+    def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__(YearScrollItemDelegate, parent)
 
-    def _initItems(self):
+    def _initItems(self) -> None:
         self.months = [
-            self.tr('Jan'), self.tr('Feb'), self.tr('Mar'), self.tr('Apr'),
-            self.tr('May'), self.tr('Jun'), self.tr('Jul'), self.tr('Aug'),
-            self.tr('Sep'), self.tr('Oct'), self.tr('Nov'), self.tr('Dec'),
+            self.tr("Jan"),
+            self.tr("Feb"),
+            self.tr("Mar"),
+            self.tr("Apr"),
+            self.tr("May"),
+            self.tr("Jun"),
+            self.tr("Jul"),
+            self.tr("Aug"),
+            self.tr("Sep"),
+            self.tr("Oct"),
+            self.tr("Nov"),
+            self.tr("Dec"),
         ]
         self.addItems(self.months * 201)
 
@@ -386,43 +425,43 @@ class MonthScrollView(ScrollViewBase):
             year = i // 12 + self.minYear
             m = i % 12 + 1
             item = self.item(i)
-            item.setData(Qt.UserRole, QDate(year, m, 1))
+            item.setData(Qt.ItemDataRole.UserRole, QDate(year, m, 1))
             item.setSizeHint(self.gridSize())
 
             if year == self.currentDate.year() and m == self.currentDate.month():
                 self.delegate.setCurrentIndex(self.indexFromItem(item))
 
-    def scrollToDate(self, date: QDate):
+    def scrollToDate(self, date: QDate) -> None:
         page = date.year() - self.minYear
         self.scrollToPage(page)
 
-    def currentPageRange(self):
+    def currentPageRange(self) -> tuple[QDate, QDate]:
         year = self.minYear + self.currentPage
         return QDate(year, 1, 1), QDate(year, 12, 31)
 
 
 class MonthCalendarView(CalendarViewBase):
-    """ Month calendar view """
+    """Month calendar view"""
 
-    def __init__(self, parent=None):
+    def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
         self.setScrollView(MonthScrollView(self))
 
-    def _updateTitle(self):
+    def _updateTitle(self) -> None:
         date, _ = self.scrollView.currentPageRange()
         self.setTitle(str(date.year()))
 
     def currentPageDate(self) -> QDate:
         date, _ = self.scrollView.currentPageRange()
         item = self.scrollView.currentItem()
-        month = item.data(Qt.UserRole).month() if item else 1
+        month = item.data(Qt.ItemDataRole.UserRole).month() if item else 1
         return QDate(date.year(), month, 1)
 
 
 class DayScrollView(ScrollViewBase):
-    """ Day scroll view """
+    """Day scroll view"""
 
-    def __init__(self, parent=None):
+    def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__(DayScrollItemDelegate, parent)
         self.cols = 7
         self.pageRows = 4
@@ -430,19 +469,24 @@ class DayScrollView(ScrollViewBase):
 
         # add week day labels
         self.weekDays = [
-            self.tr('Mo'), self.tr('Tu'), self.tr('We'),
-            self.tr('Th'), self.tr('Fr'), self.tr('Sa'), self.tr('Su')
+            self.tr("Mo"),
+            self.tr("Tu"),
+            self.tr("We"),
+            self.tr("Th"),
+            self.tr("Fr"),
+            self.tr("Sa"),
+            self.tr("Su"),
         ]
         self.weekDayGroup = QWidget(self)
         self.weekDayLayout = QHBoxLayout(self.weekDayGroup)
-        self.weekDayGroup.setObjectName('weekDayGroup')
+        self.weekDayGroup.setObjectName("weekDayGroup")
         for day in self.weekDays:
             label = QLabel(day)
-            label.setObjectName('weekDayLabel')
-            self.weekDayLayout.addWidget(label, 1, Qt.AlignHCenter)
+            label.setObjectName("weekDayLabel")
+            self.weekDayLayout.addWidget(label, 1, Qt.AlignmentFlag.AlignHCenter)
 
         self.setViewportMargins(0, 38, 0, 0)
-        self.vBoxLayout.setAlignment(Qt.AlignTop)
+        self.vBoxLayout.setAlignment(Qt.AlignmentFlag.AlignTop)
         self.vBoxLayout.setContentsMargins(0, 0, 0, 0)
         self.weekDayLayout.setSpacing(0)
         self.weekDayLayout.setContentsMargins(3, 12, 3, 12)
@@ -451,7 +495,7 @@ class DayScrollView(ScrollViewBase):
     def gridSize(self) -> QSize:
         return QSize(44, 44)
 
-    def _initItems(self):
+    def _initItems(self) -> None:
         startDate = QDate(self.minYear, 1, 1)
         endDate = QDate(self.maxYear, 12, 31)
         currentDate = startDate
@@ -460,7 +504,7 @@ class DayScrollView(ScrollViewBase):
         bias = currentDate.dayOfWeek() - 1
         for i in range(bias):
             item = QListWidgetItem(self)
-            item.setFlags(Qt.NoItemFlags)
+            item.setFlags(Qt.ItemFlag.NoItemFlags)
             self.addItem(item)
 
         # add day items
@@ -473,21 +517,21 @@ class DayScrollView(ScrollViewBase):
         self.addItems(items)
         for i in range(bias, self.count()):
             item = self.item(i)
-            item.setData(Qt.UserRole, dates[i-bias])
+            item.setData(Qt.ItemDataRole.UserRole, dates[i - bias])
             item.setSizeHint(self.gridSize())
 
         self.delegate.setCurrentIndex(self.model().index(self._dateToRow(self.currentDate)))
 
-    def setDate(self, date: QDate):
+    def setDate(self, date: QDate) -> None:
         self.scrollToDate(date)
         self.setCurrentIndex(self.model().index(self._dateToRow(date)))
         self.delegate.setSelectedIndex(self.currentIndex())
 
-    def scrollToDate(self, date: QDate):
+    def scrollToDate(self, date: QDate) -> None:
         page = (date.year() - self.minYear) * 12 + date.month() - 1
         self.scrollToPage(page)
 
-    def scrollToPage(self, page: int):
+    def scrollToPage(self, page: int) -> None:
         if not 0 <= page <= 201 * 12 - 1:
             return
 
@@ -500,53 +544,53 @@ class DayScrollView(ScrollViewBase):
         self.delegate.setRange(*self.currentPageRange())
         self.pageChanged.emit(page)
 
-    def currentPageRange(self):
+    def currentPageRange(self) -> tuple[QDate, QDate]:
         date = self._pageToDate()
         return date, date.addMonths(1).addDays(-1)
 
-    def _pageToDate(self):
+    def _pageToDate(self) -> QDate:
         year = self.currentPage // 12 + self.minYear
         month = self.currentPage % 12 + 1
         return QDate(year, month, 1)
 
-    def _dateToRow(self, date: QDate):
+    def _dateToRow(self, date: QDate) -> int:
         startDate = QDate(self.minYear, 1, 1)
         days = startDate.daysTo(date)
         return days + startDate.dayOfWeek() - 1
 
-    def mouseReleaseEvent(self, e):
+    def mouseReleaseEvent(self, e: QMouseEvent) -> None:
         super().mouseReleaseEvent(e)
         self._setSelectedIndex(self.currentIndex())
 
 
 class DayCalendarView(CalendarViewBase):
-    """ Day calendar view """
+    """Day calendar view"""
 
-    def __init__(self, parent=None):
+    def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
         self.setScrollView(DayScrollView(self))
 
-    def _updateTitle(self):
+    def _updateTitle(self) -> None:
         date = self.currentPageDate()
         name = QCalendar().monthName(self.locale(), date.month(), date.year())
-        self.setTitle(f'{name} {date.year()}')
+        self.setTitle(f"{name} {date.year()}")
 
     def currentPageDate(self) -> QDate:
         date, _ = self.scrollView.currentPageRange()
         return date
 
-    def scrollToDate(self, date: QDate):
+    def scrollToDate(self, date: QDate) -> None:
         self.scrollView.scrollToDate(date)
         self._updateTitle()
 
 
 class CalendarView(QWidget):
-    """ Calendar view """
+    """Calendar view"""
 
-    resetted = pyqtSignal()
+    reset = pyqtSignal()
     dateChanged = pyqtSignal(QDate)
 
-    def __init__(self, parent=None):
+    def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
         self.hBoxLayout = QHBoxLayout(self)
         self.date = QDate()
@@ -557,17 +601,20 @@ class CalendarView(QWidget):
         self.monthView = MonthCalendarView(self)
         self.dayView = DayCalendarView(self)
 
-        self.opacityAni = QPropertyAnimation(self, b'windowOpacity', self)
-        self.slideAni = QPropertyAnimation(self, b'geometry', self)
+        self.opacityAni = QPropertyAnimation(self, b"windowOpacity", self)
+        self.slideAni = QPropertyAnimation(self, b"geometry", self)
         self.aniGroup = QParallelAnimationGroup(self)
+
+        self.shadowEffect = QGraphicsDropShadowEffect(self.stackedWidget)
 
         self.__initWidget()
 
-    def __initWidget(self):
-        self.setWindowFlags(Qt.Popup | Qt.FramelessWindowHint |
-                            Qt.NoDropShadowWindowHint)
-        self.setAttribute(Qt.WA_TranslucentBackground)
-        self.setAttribute(Qt.WA_DeleteOnClose, True)
+    def __initWidget(self) -> None:
+        self.setWindowFlags(
+            Qt.WindowType.Popup | Qt.WindowType.FramelessWindowHint | Qt.WindowType.NoDropShadowWindowHint,
+        )
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+        self.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose, True)
 
         self.stackedWidget.addWidget(self.dayView)
         self.stackedWidget.addWidget(self.monthView)
@@ -589,62 +636,66 @@ class CalendarView(QWidget):
         self.yearView.itemClicked.connect(self._onYearItemClicked)
         self.dayView.itemClicked.connect(self._onDayItemClicked)
 
-        self.monthView.resetted.connect(self._onResetted)
-        self.yearView.resetted.connect(self._onResetted)
-        self.dayView.resetted.connect(self._onResetted)
+        self.monthView.reset.connect(self._onReset)
+        self.yearView.reset.connect(self._onReset)
+        self.dayView.reset.connect(self._onReset)
 
-    def setShadowEffect(self, blurRadius=30, offset=(0, 8), color=QColor(0, 0, 0, 30)):
-        """ add shadow to dialog """
-        self.shadowEffect = QGraphicsDropShadowEffect(self.stackedWidget)
+    def setShadowEffect(
+        self,
+        blurRadius: int = 30,
+        offset: tuple[int, int] = (0, 8),
+        color: QColor = QColor(0, 0, 0, 30),
+    ) -> None:
+        """add shadow to dialog"""
         self.shadowEffect.setBlurRadius(blurRadius)
         self.shadowEffect.setOffset(*offset)
         self.shadowEffect.setColor(color)
         self.stackedWidget.setGraphicsEffect(None)
         self.stackedWidget.setGraphicsEffect(self.shadowEffect)
 
-    def isRestEnabled(self):
+    def isRestEnabled(self) -> bool:
         return self._isResetEnabled
 
-    def setResetEnabled(self, isEnabled: bool):
-        """ set the visibility of reset button """
+    def setResetEnabled(self, isEnabled: bool) -> None:
+        """set the visibility of reset button"""
         self._isResetEnabled = isEnabled
         self.yearView.setResetEnabled(isEnabled)
         self.monthView.setResetEnabled(isEnabled)
         self.dayView.setResetEnabled(isEnabled)
 
-    def _onResetted(self):
-        self.resetted.emit()
+    def _onReset(self) -> None:
+        self.reset.emit()
         self.close()
 
-    def _onDayViewTitleClicked(self):
+    def _onDayViewTitleClicked(self) -> None:
         self.stackedWidget.setCurrentWidget(self.monthView)
         self.monthView.setDate(self.dayView.currentPageDate())
 
-    def _onMonthTitleClicked(self):
+    def _onMonthTitleClicked(self) -> None:
         self.stackedWidget.setCurrentWidget(self.yearView)
         self.yearView.setDate(self.monthView.currentPageDate())
 
-    def _onMonthItemClicked(self, date: QDate):
+    def _onMonthItemClicked(self, date: QDate) -> None:
         self.stackedWidget.setCurrentWidget(self.dayView)
         self.dayView.scrollToDate(date)
 
-    def _onYearItemClicked(self, date: QDate):
+    def _onYearItemClicked(self, date: QDate) -> None:
         self.stackedWidget.setCurrentWidget(self.monthView)
         self.monthView.setDate(date)
 
-    def _onDayItemClicked(self, date: QDate):
+    def _onDayItemClicked(self, date: QDate) -> None:
         self.close()
         if date != self.date:
             self.date = date
             self.dateChanged.emit(date)
 
-    def setDate(self, date: QDate):
-        """ set the selected date """
+    def setDate(self, date: QDate) -> None:
+        """set the selected date"""
         self.dayView.setDate(date)
         self.date = date
 
-    def exec(self, pos: QPoint, ani=True):
-        """ show calendar view """
+    def exec(self, pos: QPoint, ani: bool = True) -> None:
+        """show calendar view"""
         if self.isVisible():
             return
 
@@ -655,14 +706,15 @@ class CalendarView(QWidget):
         self.move(pos)
 
         if not ani:
-            return self.show()
+            self.show()
+            return
 
         self.opacityAni.setStartValue(0)
         self.opacityAni.setEndValue(1)
         self.opacityAni.setDuration(150)
         self.opacityAni.setEasingCurve(QEasingCurve.OutQuad)
 
-        self.slideAni.setStartValue(QRect(pos-QPoint(0, 8), self.sizeHint()))
+        self.slideAni.setStartValue(QRect(pos - QPoint(0, 8), self.sizeHint()))
         self.slideAni.setEndValue(QRect(pos, self.sizeHint()))
         self.slideAni.setDuration(150)
         self.slideAni.setEasingCurve(QEasingCurve.OutQuad)
