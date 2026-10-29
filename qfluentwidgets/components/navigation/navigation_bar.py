@@ -1,48 +1,46 @@
-# coding:utf-8
-from typing import Dict, Union
+from typing import Dict, Optional, Union
 
-from PyQt5.QtCore import Qt, pyqtSignal, QRect, QPropertyAnimation, QEasingCurve, pyqtProperty, QRectF, QPoint
-from PyQt5.QtGui import QFont, QPainter, QColor, QIcon
-from PyQt5.QtWidgets import QWidget, QVBoxLayout
+from PyQt5.QtCore import pyqtProperty, QPoint, QPropertyAnimation, QRect, QRectF, Qt
+from PyQt5.QtGui import QColor, QFont, QIcon, QPainter, QPaintEvent
+from PyQt5.QtWidgets import QVBoxLayout, QWidget
 
+from ...common.color import autoFallbackThemeColor
 from ...common.config import isDarkTheme
 from ...common.font import setFont
-from ...common.style_sheet import themeColor
-from ...common.color import autoFallbackThemeColor
 from ...common.icon import drawIcon, FluentIconBase, toQIcon
 from ...common.icon import FluentIcon as FIF
 from ...common.router import qrouter
 from ...common.style_sheet import FluentStyleSheet
 from ..widgets.scroll_area import ScrollArea
-from .navigation_widget import NavigationPushButton, NavigationWidget, NavigationIndicator
-from .navigation_panel import RouteKeyError, NavigationItemPosition
+from .navigation_panel import NavigationItemPosition, RouteKeyError
+from .navigation_widget import NavigationIndicator, NavigationPushButton, NavigationWidget
 
 
 class IconSlideAnimation(QPropertyAnimation):
-    """ Icon sliding animation """
+    """Icon sliding animation"""
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None) -> None:
         super().__init__(parent)
         self._offset = 0
         self.maxOffset = 6
         self.setTargetObject(self)
         self.setPropertyName(b"offset")
 
-    def getOffset(self):
+    def getOffset(self) -> float:
         return self._offset
 
-    def setOffset(self, value: float):
+    def setOffset(self, value: float) -> None:
         self._offset = value
         self.parent().update()
 
-    def slideDown(self):
-        """ slide down """
+    def slideDown(self) -> None:
+        """slide down"""
         self.setEndValue(self.maxOffset)
         self.setDuration(100)
         self.start()
 
-    def slideUp(self):
-        """ slide up """
+    def slideUp(self) -> None:
+        """slide up"""
         self.setEndValue(0)
         self.setDuration(100)
         self.start()
@@ -50,11 +48,17 @@ class IconSlideAnimation(QPropertyAnimation):
     offset = pyqtProperty(float, getOffset, setOffset)
 
 
-
 class NavigationBarPushButton(NavigationPushButton):
-    """ Navigation bar push button """
+    """Navigation bar push button"""
 
-    def __init__(self, icon: Union[str, QIcon, FIF], text: str, isSelectable: bool, selectedIcon=None, parent=None):
+    def __init__(
+        self,
+        icon: Union[str, QIcon, FIF],
+        text: str,
+        isSelectable: bool,
+        selectedIcon=None,
+        parent: Optional[QWidget] = None,
+    ) -> None:
         super().__init__(icon, text, isSelectable, parent)
         self.iconAni = IconSlideAnimation(self)
         self._selectedIcon = selectedIcon
@@ -65,42 +69,41 @@ class NavigationBarPushButton(NavigationPushButton):
         self.setFixedSize(64, 58)
         setFont(self, 11)
 
-    def setSelectedColor(self, light, dark):
+    def setSelectedColor(self, light: QColor, dark: QColor) -> None:
         self.lightSelectedColor = QColor(light)
         self.darkSelectedColor = QColor(dark)
         self.update()
 
-    def selectedIcon(self):
+    def selectedIcon(self) -> QIcon:
         if self._selectedIcon:
             return toQIcon(self._selectedIcon)
 
         return QIcon()
 
-    def setSelectedIcon(self, icon: Union[str, QIcon, FIF]):
+    def setSelectedIcon(self, icon: Union[str, QIcon, FIF]) -> None:
         self._selectedIcon = icon
         self.update()
 
-    def setSelectedTextVisible(self, isVisible):
+    def setSelectedTextVisible(self, isVisible: bool) -> None:
         self._isSelectedTextVisible = isVisible
         self.update()
 
-    def indicatorRect(self):
-        """ get the indicator geometry """
+    def indicatorRect(self) -> QRectF:
+        """get the indicator geometry"""
         return QRectF(0, 16, 4, 24)
 
-    def paintEvent(self, e):
+    def paintEvent(self, e: QPaintEvent) -> None:
         painter = QPainter(self)
-        painter.setRenderHints(QPainter.Antialiasing |
-                               QPainter.TextAntialiasing | QPainter.SmoothPixmapTransform)
-        painter.setPen(Qt.NoPen)
+        painter.setRenderHints(QPainter.Antialiasing | QPainter.TextAntialiasing | QPainter.SmoothPixmapTransform)
+        painter.setPen(Qt.PenStyle.NoPen)
 
         self._drawBackground(painter)
         self._drawIcon(painter)
         self._drawText(painter)
 
-    def _drawBackground(self, painter: QPainter):
+    def _drawBackground(self, painter: QPainter) -> None:
         if self.isSelected or self.isAboutSelected:
-            painter.setBrush(QColor(255, 255, 255, 42) if isDarkTheme() else Qt.white)
+            painter.setBrush(QColor(255, 255, 255, 42) if isDarkTheme() else Qt.GlobalColor.white)
             painter.drawRoundedRect(self.rect(), 5, 5)
 
             # draw indicator
@@ -116,7 +119,7 @@ class NavigationBarPushButton(NavigationPushButton):
             painter.setBrush(QColor(c, c, c, alpha))
             painter.drawRoundedRect(self.rect(), 5, 5)
 
-    def _drawIcon(self, painter: QPainter):
+    def _drawIcon(self, painter: QPainter) -> None:
         if (self.isPressed or not self.isEnter) and not (self.isSelected or self.isAboutSelected):
             painter.setOpacity(0.6)
         if not self.isEnabled():
@@ -137,20 +140,20 @@ class NavigationBarPushButton(NavigationPushButton):
         else:
             drawIcon(self._icon, painter, rect)
 
-    def _drawText(self, painter: QPainter):
+    def _drawText(self, painter: QPainter) -> None:
         if self.isSelected and not self._isSelectedTextVisible:
             return
 
         if self.isSelected or self.isAboutSelected:
             painter.setPen(autoFallbackThemeColor(self.lightSelectedColor, self.darkSelectedColor))
         else:
-            painter.setPen(Qt.white if isDarkTheme() else Qt.black)
+            painter.setPen(Qt.GlobalColor.white if isDarkTheme() else Qt.GlobalColor.black)
 
         painter.setFont(self.font())
         rect = QRect(0, 32, self.width(), 26)
-        painter.drawText(rect, Qt.AlignCenter, self.text())
+        painter.drawText(rect, Qt.AlignmentFlag.AlignCenter, self.text())
 
-    def setSelected(self, isSelected: bool):
+    def setSelected(self, isSelected: bool) -> None:
         if isSelected == self.isSelected:
             return
 
@@ -164,8 +167,7 @@ class NavigationBarPushButton(NavigationPushButton):
 
 
 class NavigationBar(QWidget):
-
-    def __init__(self, parent=None):
+    def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent=parent)
         self.indicator = NavigationIndicator(self)
         self._isIndicatorAnimationEnabled = True
@@ -182,31 +184,31 @@ class NavigationBar(QWidget):
         self.bottomLayout = QVBoxLayout()
         self.scrollLayout = QVBoxLayout(self.scrollWidget)
 
-        self.items = {}   # type: Dict[str, NavigationWidget]
+        self.items: Dict[str, NavigationWidget] = {}
         self.history = qrouter
         self._currentRouteKey = None
 
         self.__initWidget()
 
-    def __initWidget(self):
+    def __initWidget(self) -> None:
         self.resize(48, self.height())
-        self.setAttribute(Qt.WA_StyledBackground)
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground)
         self.window().installEventFilter(self)
 
-        self.scrollArea.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.scrollArea.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.scrollArea.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.scrollArea.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.scrollArea.horizontalScrollBar().setEnabled(False)
         self.scrollArea.setWidget(self.scrollWidget)
         self.scrollArea.setWidgetResizable(True)
 
-        self.scrollWidget.setObjectName('scrollWidget')
+        self.scrollWidget.setObjectName("scrollWidget")
         FluentStyleSheet.NAVIGATION_INTERFACE.apply(self)
         FluentStyleSheet.NAVIGATION_INTERFACE.apply(self.scrollWidget)
         self.__initLayout()
 
         self.indicator.aniFinished.connect(self._onIndicatorAniFinished)
 
-    def __initLayout(self):
+    def __initLayout(self) -> None:
         self.vBoxLayout.setContentsMargins(0, 5, 0, 5)
         self.topLayout.setContentsMargins(4, 0, 4, 0)
         self.bottomLayout.setContentsMargins(4, 0, 4, 0)
@@ -220,20 +222,29 @@ class NavigationBar(QWidget):
         self.vBoxLayout.addWidget(self.scrollArea)
         self.vBoxLayout.addLayout(self.bottomLayout, 0)
 
-        self.vBoxLayout.setAlignment(Qt.AlignTop)
-        self.topLayout.setAlignment(Qt.AlignTop)
-        self.scrollLayout.setAlignment(Qt.AlignTop)
-        self.bottomLayout.setAlignment(Qt.AlignBottom)
+        self.vBoxLayout.setAlignment(Qt.AlignmentFlag.AlignTop)
+        self.topLayout.setAlignment(Qt.AlignmentFlag.AlignTop)
+        self.scrollLayout.setAlignment(Qt.AlignmentFlag.AlignTop)
+        self.bottomLayout.setAlignment(Qt.AlignmentFlag.AlignBottom)
 
-    def widget(self, routeKey: str):
+    def widget(self, routeKey: str) -> NavigationWidget:
         if routeKey not in self.items:
-            raise RouteKeyError(f"`{routeKey}` is illegal.")
+            msg = f"`{routeKey}` is illegal."
+            raise RouteKeyError(msg)
 
         return self.items[routeKey]
 
-    def addItem(self, routeKey: str, icon: Union[str, QIcon, FluentIconBase], text: str, onClick=None,
-                selectable=True, selectedIcon=None, position=NavigationItemPosition.TOP):
-        """ add navigation item
+    def addItem(
+        self,
+        routeKey: str,
+        icon: Union[str, QIcon, FluentIconBase],
+        text: str,
+        onClick=None,
+        selectable: bool = True,
+        selectedIcon=None,
+        position: NavigationItemPosition = NavigationItemPosition.TOP,
+    ):
+        """add navigation item
 
         Parameters
         ----------
@@ -260,8 +271,14 @@ class NavigationBar(QWidget):
         """
         return self.insertItem(-1, routeKey, icon, text, onClick, selectable, selectedIcon, position)
 
-    def addWidget(self, routeKey: str, widget: NavigationWidget, onClick=None, position=NavigationItemPosition.TOP):
-        """ add custom widget
+    def addWidget(
+        self,
+        routeKey: str,
+        widget: NavigationWidget,
+        onClick=None,
+        position: NavigationItemPosition = NavigationItemPosition.TOP,
+    ):
+        """add custom widget
 
         Parameters
         ----------
@@ -279,9 +296,18 @@ class NavigationBar(QWidget):
         """
         self.insertWidget(-1, routeKey, widget, onClick, position)
 
-    def insertItem(self, index: int, routeKey: str, icon: Union[str, QIcon, FluentIconBase], text: str, onClick=None,
-                   selectable=True, selectedIcon=None, position=NavigationItemPosition.TOP):
-        """ insert navigation tree item
+    def insertItem(
+        self,
+        index: int,
+        routeKey: str,
+        icon: Union[str, QIcon, FluentIconBase],
+        text: str,
+        onClick=None,
+        selectable: bool = True,
+        selectedIcon=None,
+        position: NavigationItemPosition = NavigationItemPosition.TOP,
+    ):
+        """insert navigation tree item
 
         Parameters
         ----------
@@ -310,7 +336,7 @@ class NavigationBar(QWidget):
             where the button is added
         """
         if routeKey in self.items:
-            return
+            return None
 
         w = NavigationBarPushButton(icon, text, selectable, selectedIcon, self)
         w.setSelectedColor(self.lightSelectedColor, self.darkSelectedColor)
@@ -318,9 +344,15 @@ class NavigationBar(QWidget):
         self.insertWidget(index, routeKey, w, onClick, position)
         return w
 
-    def insertWidget(self, index: int, routeKey: str, widget: NavigationWidget, onClick=None,
-                     position=NavigationItemPosition.TOP):
-        """ insert custom widget
+    def insertWidget(
+        self,
+        index: int,
+        routeKey: str,
+        widget: NavigationWidget,
+        onClick=None,
+        position: NavigationItemPosition = NavigationItemPosition.TOP,
+    ) -> None:
+        """insert custom widget
 
         Parameters
         ----------
@@ -345,35 +377,47 @@ class NavigationBar(QWidget):
         self._registerWidget(routeKey, widget, onClick)
         self._insertWidgetToLayout(index, widget, position)
 
-    def _registerWidget(self, routeKey: str, widget: NavigationWidget, onClick):
-        """ register widget """
+    def _registerWidget(self, routeKey: str, widget: NavigationWidget, onClick) -> None:
+        """register widget"""
         widget.clicked.connect(self._onWidgetClicked)
 
         if onClick is not None:
             widget.clicked.connect(onClick)
 
-        widget.setProperty('routeKey', routeKey)
+        widget.setProperty("routeKey", routeKey)
         self.items[routeKey] = widget
 
-    def _insertWidgetToLayout(self, index: int, widget: NavigationWidget, position: NavigationItemPosition):
-        """ insert widget to layout """
+    def _insertWidgetToLayout(self, index: int, widget: NavigationWidget, position: NavigationItemPosition) -> None:
+        """insert widget to layout"""
         if position == NavigationItemPosition.TOP:
             widget.setParent(self)
             self.topLayout.insertWidget(
-                index, widget, 0, Qt.AlignTop | Qt.AlignHCenter)
+                index,
+                widget,
+                0,
+                Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignHCenter,
+            )
         elif position == NavigationItemPosition.SCROLL:
             widget.setParent(self.scrollWidget)
             self.scrollLayout.insertWidget(
-                index, widget, 0, Qt.AlignTop | Qt.AlignHCenter)
+                index,
+                widget,
+                0,
+                Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignHCenter,
+            )
         else:
             widget.setParent(self)
             self.bottomLayout.insertWidget(
-                index, widget, 0, Qt.AlignBottom | Qt.AlignHCenter)
+                index,
+                widget,
+                0,
+                Qt.AlignmentFlag.AlignBottom | Qt.AlignmentFlag.AlignHCenter,
+            )
 
         widget.show()
 
-    def removeWidget(self, routeKey: str):
-        """ remove widget
+    def removeWidget(self, routeKey: str) -> None:
+        """remove widget
 
         Parameters
         ----------
@@ -387,11 +431,11 @@ class NavigationBar(QWidget):
         widget.deleteLater()
         self.history.remove(routeKey)
 
-    def currentItem(self):
+    def currentItem(self) -> Optional[NavigationWidget]:
         return self.widget(self._currentRouteKey) if self._currentRouteKey else None
 
-    def setCurrentItem(self, routeKey: str):
-        """ set current selected item
+    def setCurrentItem(self, routeKey: str) -> None:
+        """set current selected item
 
         Parameters
         ----------
@@ -425,15 +469,15 @@ class NavigationBar(QWidget):
         self.indicator.setIndicatorColor(newItem.lightIndicatorColor, newItem.darkIndicatorColor)
         self.indicator.startAnimation(preIndicatorRect, newIndicatorRect)
 
-    def setFont(self, font: QFont):
-        """ set the font of navigation item """
+    def setFont(self, font: QFont) -> None:
+        """set the font of navigation item"""
         super().setFont(font)
 
         for widget in self.buttons():
             widget.setFont(font)
 
-    def setSelectedTextVisible(self, isVisible: bool):
-        """ set whether the text is visible when button is selected """
+    def setSelectedTextVisible(self, isVisible: bool) -> None:
+        """set whether the text is visible when button is selected"""
         if isVisible == self._isSelectedTextVisible:
             return
 
@@ -441,11 +485,11 @@ class NavigationBar(QWidget):
         for widget in self.buttons():
             widget.setSelectedTextVisible(isVisible)
 
-    def isSelectedTextVisible(self):
+    def isSelectedTextVisible(self) -> bool:
         return self._isSelectedTextVisible
 
-    def setSelectedColor(self, light, dark):
-        """ set the selected color of all items """
+    def setSelectedColor(self, light, dark) -> None:
+        """set the selected color of all items"""
         self.lightSelectedColor = QColor(light)
         self.darkSelectedColor = QColor(dark)
         for button in self.buttons():
@@ -454,18 +498,18 @@ class NavigationBar(QWidget):
     def buttons(self):
         return [i for i in self.items.values() if isinstance(i, NavigationPushButton)]
 
-    def isIndicatorAnimationEnabled(self):
+    def isIndicatorAnimationEnabled(self) -> bool:
         return self._isIndicatorAnimationEnabled
 
-    def setIndicatorAnimationEnabled(self, isEnabled: bool):
+    def setIndicatorAnimationEnabled(self, isEnabled: bool) -> None:
         self._isIndicatorAnimationEnabled = isEnabled
 
-    def _onWidgetClicked(self):
-        widget = self.sender()  # type: NavigationWidget
+    def _onWidgetClicked(self) -> None:
+        widget: NavigationWidget = self.sender()
         if widget.isSelectable:
-            self.setCurrentItem(widget.property('routeKey'))
+            self.setCurrentItem(widget.property("routeKey"))
 
-    def _getIndicatorRect(self, item: NavigationWidget):
+    def _getIndicatorRect(self, item: NavigationWidget) -> QRect:
         if not item:
             return QRect()
 
@@ -473,14 +517,14 @@ class NavigationBar(QWidget):
         rect = item.indicatorRect()
         return rect.translated(pos)
 
-    def _stopIndicatorAnimation(self):
+    def _stopIndicatorAnimation(self) -> None:
         if not self.isIndicatorAnimationEnabled():
             return
 
         self.indicator.stopAnimation()
         self._onIndicatorAniFinished()
 
-    def _onIndicatorAniFinished(self):
+    def _onIndicatorAniFinished(self) -> None:
         item = self.currentItem()
         if not item:
             return

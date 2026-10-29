@@ -1,56 +1,55 @@
-# coding:utf-8
 import math
+from typing import Dict, List, Optional
 
-from typing import Dict, List
-from PyQt5.QtCore import Qt, pyqtSignal, QRectF, pyqtProperty, QPoint, QEvent
-from PyQt5.QtGui import QPainter, QFont, QHoverEvent
-from PyQt5.QtWidgets import QWidget, QAction, QApplication
+from PyQt5.QtCore import pyqtProperty, pyqtSignal, QEvent, QPoint, QRectF, Qt
+from PyQt5.QtGui import QFont, QHoverEvent, QMouseEvent, QPainter, QPaintEvent, QResizeEvent
+from PyQt5.QtWidgets import QAction, QApplication, QWidget
 
 from ...common.font import setFont
 from ...common.icon import FluentIcon
 from ...common.style_sheet import isDarkTheme
-from ...components.widgets.menu import RoundMenu, MenuAnimationType
+from ...components.widgets.menu import MenuAnimationType, RoundMenu
 
 
 class BreadcrumbWidget(QWidget):
-    """ Bread crumb widget """
+    """Bread crumb widget"""
 
     clicked = pyqtSignal()
 
-    def __init__(self, parent=None):
+    def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent=parent)
         self.isHover = False
         self.isPressed = False
 
-    def mousePressEvent(self, e):
+    def mousePressEvent(self, e: QMouseEvent) -> None:
         self.isPressed = True
         self.update()
 
-    def mouseReleaseEvent(self, e):
+    def mouseReleaseEvent(self, e: QMouseEvent) -> None:
         self.isPressed = False
         self.update()
         self.clicked.emit()
 
-    def enterEvent(self, e):
+    def enterEvent(self, e: QEvent) -> None:
         self.isHover = True
         self.update()
 
-    def leaveEvent(self, e):
+    def leaveEvent(self, e: QEvent) -> None:
         self.isHover = False
         self.update()
 
 
 class ElideButton(BreadcrumbWidget):
-    """ Elide button """
+    """Elide button"""
 
-    def __init__(self, parent=None):
+    def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
         self.setFixedSize(16, 16)
 
-    def paintEvent(self, e):
+    def paintEvent(self, e: QPaintEvent):
         painter = QPainter(self)
         painter.setRenderHints(QPainter.Antialiasing)
-        painter.setPen(Qt.NoPen)
+        painter.setPen(Qt.PenStyle.NoPen)
 
         if self.isPressed:
             painter.setOpacity(0.5)
@@ -59,17 +58,17 @@ class ElideButton(BreadcrumbWidget):
 
         FluentIcon.MORE.render(painter, self.rect())
 
-    def clearState(self):
-        self.setAttribute(Qt.WA_UnderMouse, False)
+    def clearState(self) -> None:
+        self.setAttribute(Qt.WidgetAttribute.WA_UnderMouse, False)
         self.isHover = False
-        e = QHoverEvent(QEvent.HoverLeave, QPoint(-1, -1), QPoint())
+        e = QHoverEvent(QEvent.Type.HoverLeave, QPoint(-1, -1), QPoint())
         QApplication.sendEvent(self, e)
 
 
 class BreadcrumbItem(BreadcrumbWidget):
-    """ Breadcrumb item """
+    """Breadcrumb item"""
 
-    def __init__(self, routeKey: str, text: str, index: int, parent=None):
+    def __init__(self, routeKey: str, text: str, index: int, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent=parent)
         self.text = text
         self.routeKey = routeKey
@@ -79,7 +78,7 @@ class BreadcrumbItem(BreadcrumbWidget):
         self.index = index
         self.spacing = 5
 
-    def setText(self, text: str):
+    def setText(self, text: str) -> None:
         self.text = text
 
         rect = self.fontMetrics().boundingRect(text)
@@ -91,25 +90,25 @@ class BreadcrumbItem(BreadcrumbWidget):
         self.setFixedHeight(rect.height())
         self.update()
 
-    def isRoot(self):
+    def isRoot(self) -> bool:
         return self.index == 0
 
-    def setSelected(self, isSelected: bool):
+    def setSelected(self, isSelected: bool) -> None:
         self.isSelected = isSelected
         self.update()
 
-    def setFont(self, font: QFont):
+    def setFont(self, font: QFont) -> None:
         super().setFont(font)
         self.setText(self.text)
 
-    def setSpacing(self, spacing: int):
+    def setSpacing(self, spacing: int) -> None:
         self.spacing = spacing
         self.setText(self.text)
 
-    def paintEvent(self, e):
+    def paintEvent(self, e: QPaintEvent) -> None:
         painter = QPainter(self)
         painter.setRenderHints(QPainter.TextAntialiasing | QPainter.Antialiasing)
-        painter.setPen(Qt.NoPen)
+        painter.setPen(Qt.PenStyle.NoPen)
 
         # draw seperator
         sw = self.spacing * 2
@@ -130,28 +129,24 @@ class BreadcrumbItem(BreadcrumbWidget):
             painter.setOpacity(0.79 if isDarkTheme() else 0.61)
 
         painter.setFont(self.font())
-        painter.setPen(Qt.white if isDarkTheme() else Qt.black)
+        painter.setPen(Qt.GlobalColor.white if isDarkTheme() else Qt.GlobalColor.black)
 
-        if self.isRoot():
-            rect = self.rect()
-        else:
-            rect = QRectF(sw, 0, self.width() - sw, self.height())
+        rect = self.rect() if self.isRoot() else QRectF(sw, 0, self.width() - sw, self.height())
 
-        painter.drawText(rect, Qt.AlignVCenter | Qt.AlignLeft, self.text)
-
+        painter.drawText(rect, Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft, self.text)
 
 
 class BreadcrumbBar(QWidget):
-    """ Breadcrumb bar """
+    """Breadcrumb bar"""
 
     currentItemChanged = pyqtSignal(str)
     currentIndexChanged = pyqtSignal(int)
 
-    def __init__(self, parent=None):
+    def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent=parent)
-        self.itemMap = {}       # type: Dict[BreadcrumbItem]
-        self.items = []         # type: List[BreadcrumbItem]
-        self.hiddenItems = []   # type: List[BreadcrumbItem]
+        self.itemMap: Dict[str, BreadcrumbItem] = {}
+        self.items: List[BreadcrumbItem] = []
+        self.hiddenItems: List[BreadcrumbItem] = []
 
         self._spacing = 10
         self._currentIndex = -1
@@ -159,13 +154,13 @@ class BreadcrumbBar(QWidget):
         self.elideButton = ElideButton(self)
 
         setFont(self, 14)
-        self.setAttribute(Qt.WA_TranslucentBackground)
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
 
         self.elideButton.hide()
         self.elideButton.clicked.connect(self._showHiddenItemsMenu)
 
-    def addItem(self, routeKey: str, text: str):
-        """ add item
+    def addItem(self, routeKey: str, text: str) -> None:
+        """add item
 
         Parameters
         ----------
@@ -190,19 +185,19 @@ class BreadcrumbBar(QWidget):
 
         self.updateGeometry()
 
-    def setCurrentIndex(self, index: int):
+    def setCurrentIndex(self, index: int) -> None:
         if not 0 <= index < len(self.items) or index == self.currentIndex():
             return
 
-        if 0<= self.currentIndex() < len(self.items):
+        if 0 <= self.currentIndex() < len(self.items):
             self.currentItem().setSelected(False)
 
         self._currentIndex = index
         self.currentItem().setSelected(True)
 
         # remove trailing items
-        for item in self.items[-1:index:-1]:
-            item = self.items.pop()
+        for _ in self.items[-1:index:-1]:
+            item: BreadcrumbItem = self.items.pop()
             self.itemMap.pop(item.routeKey)
             item.deleteLater()
 
@@ -211,27 +206,27 @@ class BreadcrumbBar(QWidget):
         self.currentIndexChanged.emit(index)
         self.currentItemChanged.emit(self.currentItem().routeKey)
 
-    def setCurrentItem(self, routeKey: str):
+    def setCurrentItem(self, routeKey: str) -> None:
         if routeKey not in self.itemMap:
             return
 
         self.setCurrentIndex(self.items.index(self.itemMap[routeKey]))
 
-    def setItemText(self, routeKey: str, text: str):
+    def setItemText(self, routeKey: str, text: str) -> None:
         item = self.item(routeKey)
         if item:
             item.setText(text)
 
-    def item(self, routeKey: str) -> BreadcrumbItem:
+    def item(self, routeKey: str) -> Optional[BreadcrumbItem]:
         return self.itemMap.get(routeKey, None)
 
-    def itemAt(self, index: int):
+    def itemAt(self, index: int) -> Optional[BreadcrumbItem]:
         if 0 <= index < len(self.items):
             return self.items[index]
 
         return None
 
-    def currentIndex(self):
+    def currentIndex(self) -> int:
         return self._currentIndex
 
     def currentItem(self) -> BreadcrumbItem:
@@ -240,11 +235,11 @@ class BreadcrumbBar(QWidget):
 
         return None
 
-    def resizeEvent(self, e):
+    def resizeEvent(self, e: QResizeEvent) -> None:
         self.updateGeometry()
 
-    def clear(self):
-        """ clear all items """
+    def clear(self) -> None:
+        """clear all items"""
         while self.items:
             item = self.items.pop()
             self.itemMap.pop(item.routeKey)
@@ -253,8 +248,8 @@ class BreadcrumbBar(QWidget):
         self.elideButton.hide()
         self._currentIndex = -1
 
-    def popItem(self):
-        """ pop trailing item """
+    def popItem(self) -> None:
+        """pop trailing item"""
         if not self.items:
             return
 
@@ -263,11 +258,11 @@ class BreadcrumbBar(QWidget):
         else:
             self.clear()
 
-    def count(self):
-        """ Returns the number of items """
+    def count(self) -> int:
+        """Returns the number of items"""
         return len(self.items)
 
-    def updateGeometry(self):
+    def updateGeometry(self) -> None:
         if not self.items:
             return
 
@@ -298,11 +293,11 @@ class BreadcrumbBar(QWidget):
             item.show()
             x += item.width()
 
-    def isElideVisible(self):
+    def isElideVisible(self) -> bool:
         w = sum(i.width() for i in self.items)
         return w > self.width()
 
-    def setFont(self, font: QFont):
+    def setFont(self, font: QFont) -> None:
         super().setFont(font)
 
         s = int(font.pixelSize() / 14 * 16)
@@ -311,7 +306,7 @@ class BreadcrumbBar(QWidget):
         for item in self.items:
             item.setFont(font)
 
-    def _showHiddenItemsMenu(self):
+    def _showHiddenItemsMenu(self) -> None:
         self.elideButton.clearState()
 
         menu = RoundMenu(parent=self)
@@ -319,7 +314,12 @@ class BreadcrumbBar(QWidget):
 
         for item in self.hiddenItems:
             menu.addAction(
-                QAction(item.text, menu, triggered=lambda c, i=item: self.setCurrentItem(i.routeKey)))
+                QAction(
+                    item.text,
+                    menu,
+                    triggered=lambda c, i=item: self.setCurrentItem(i.routeKey),
+                ),
+            )
 
         # determine the animation type by choosing the maximum height of view
         x = -menu.layout().contentsMargins().left()
@@ -336,10 +336,10 @@ class BreadcrumbBar(QWidget):
             menu.view.adjustSize(pu, MenuAnimationType.PULL_UP)
             menu.exec(pu, aniType=MenuAnimationType.PULL_UP)
 
-    def getSpacing(self):
+    def getSpacing(self) -> int:
         return self._spacing
 
-    def setSpacing(self, spacing: int):
+    def setSpacing(self, spacing: int) -> None:
         if spacing == self._spacing:
             return
 

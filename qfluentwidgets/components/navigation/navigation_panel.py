@@ -1,27 +1,35 @@
-# coding:utf-8
 from enum import Enum
-from typing import Dict, Union
+from typing import Callable, Dict, Optional, Union
 
-from PyQt5.QtCore import Qt, QPropertyAnimation, QRect, QSize, QEvent, QEasingCurve, pyqtSignal, QPoint, QRectF
-from PyQt5.QtGui import QResizeEvent, QIcon, QColor, QPainterPath
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QFrame, QApplication, QHBoxLayout
+from PyQt5.QtCore import pyqtSignal, QEasingCurve, QEvent, QPoint, QPropertyAnimation, QRect, QSize, Qt
+from PyQt5.QtGui import QColor, QIcon, QPainterPath, QPaintEvent, QResizeEvent
+from PyQt5.QtWidgets import QApplication, QFrame, QHBoxLayout, QVBoxLayout, QWidget
 
-from .navigation_widget import (NavigationTreeWidgetBase, NavigationToolButton, NavigationWidget, NavigationSeparator,
-                                NavigationTreeWidget, NavigationFlyoutMenu, NavigationItemHeader, NavigationIndicator)
-from ..widgets.acrylic_label import AcrylicBrush
-from ..widgets.scroll_area import ScrollArea
-from ..widgets.tool_tip import ToolTipFilter
-from ..widgets.scroll_bar import ScrollBarHandleDisplayMode
-from ..widgets.flyout import Flyout, FlyoutAnimationType, FlyoutViewBase, SlideRightFlyoutAnimationManager
-from ..material.acrylic_flyout import AcrylicFlyout, AcrylicFlyoutViewBase
+from ...common.icon import FluentIcon as FIF
+from ...common.icon import FluentIconBase
 from ...common.router import qrouter
 from ...common.style_sheet import FluentStyleSheet, isDarkTheme
-from ...common.icon import FluentIconBase
-from ...common.icon import FluentIcon as FIF
+from ..material.acrylic_flyout import AcrylicFlyout, AcrylicFlyoutViewBase
+from ..widgets.acrylic_label import AcrylicBrush
+from ..widgets.flyout import Flyout, FlyoutAnimationType, FlyoutViewBase, SlideRightFlyoutAnimationManager
+from ..widgets.scroll_area import ScrollArea
+from ..widgets.scroll_bar import ScrollBarHandleDisplayMode
+from ..widgets.tool_tip import ToolTipFilter
+from .navigation_widget import (
+    NavigationFlyoutMenu,
+    NavigationIndicator,
+    NavigationItemHeader,
+    NavigationSeparator,
+    NavigationToolButton,
+    NavigationTreeWidget,
+    NavigationTreeWidgetBase,
+    NavigationWidget,
+)
 
 
 class NavigationDisplayMode(Enum):
-    """ Navigation display mode """
+    """Navigation display mode"""
+
     MINIMAL = 0
     COMPACT = 1
     EXPAND = 2
@@ -29,42 +37,43 @@ class NavigationDisplayMode(Enum):
 
 
 class NavigationItemPosition(Enum):
-    """ Navigation item position """
+    """Navigation item position"""
+
     TOP = 0
     SCROLL = 1
     BOTTOM = 2
 
 
 class NavigationToolTipFilter(ToolTipFilter):
-    """ Navigation tool tip filter """
+    """Navigation tool tip filter"""
 
     def _canShowToolTip(self) -> bool:
         isVisible = super()._canShowToolTip()
-        parent = self.parent()  # type: NavigationWidget
+        parent: NavigationWidget = self.parent()
         return isVisible and parent.isCompacted
 
 
 class RouteKeyError(Exception):
-    """ Route key error """
+    """Route key error"""
 
 
 class NavigationItem:
-    """ Navigation item """
+    """Navigation item"""
 
-    def __init__(self, routeKey: str, parentRouteKey: str, widget: NavigationWidget):
+    def __init__(self, routeKey: str, parentRouteKey: str, widget: NavigationWidget) -> None:
         self.routeKey = routeKey
         self.parentRouteKey = parentRouteKey
         self.widget = widget
 
 
 class NavigationPanel(QFrame):
-    """ Navigation panel """
+    """Navigation panel"""
 
     displayModeChanged = pyqtSignal(NavigationDisplayMode)
 
-    def __init__(self, parent=None, isMinimalEnabled=False):
+    def __init__(self, parent: Optional[QWidget] = None, isMinimalEnabled: bool = False) -> None:
         super().__init__(parent=parent)
-        self._parent = parent   # type: QWidget
+        self._parent = parent
         self._isMenuButtonVisible = True
         self._isReturnButtonVisible = False
         self._isCollapsible = True
@@ -88,11 +97,11 @@ class NavigationPanel(QFrame):
         self.bottomLayout = NavigationItemLayout()
         self.scrollLayout = NavigationItemLayout(self.scrollWidget)
 
-        self.items = {}   # type: Dict[str, NavigationItem]
+        self.items: Dict[str, NavigationItem] = {}
         self.history = qrouter
         self._currentRouteKey = None
 
-        self.expandAni = QPropertyAnimation(self, b'geometry', self)
+        self.expandAni = QPropertyAnimation(self, b"geometry", self)
         self.expandWidth = 322
         self.minimumExpandWidth = 1008
 
@@ -104,19 +113,19 @@ class NavigationPanel(QFrame):
 
         self.__initWidget()
 
-    def __initWidget(self):
+    def __initWidget(self) -> None:
         self.resize(48, self.height())
-        self.setAttribute(Qt.WA_StyledBackground)
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground)
         self.window().installEventFilter(self)
 
         self.returnButton.hide()
         self.returnButton.setDisabled(True)
 
-        self.scrollArea.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.scrollArea.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.scrollArea.horizontalScrollBar().setEnabled(False)
         self.scrollArea.setWidget(self.scrollWidget)
         self.scrollArea.setWidgetResizable(True)
-        self.scrollArea.scrollDelagate.vScrollBar.setHandleDisplayMode(ScrollBarHandleDisplayMode.ON_HOVER)
+        self.scrollArea.scrollDelegate.vScrollBar.setHandleDisplayMode(ScrollBarHandleDisplayMode.ON_HOVER)
 
         self.expandAni.setEasingCurve(QEasingCurve.OutQuad)
         self.expandAni.setDuration(150)
@@ -129,18 +138,18 @@ class NavigationPanel(QFrame):
 
         # add tool tip
         self.returnButton.installEventFilter(ToolTipFilter(self.returnButton, 1000))
-        self.returnButton.setToolTip(self.tr('Back'))
+        self.returnButton.setToolTip(self.tr("Back"))
 
         self.menuButton.installEventFilter(ToolTipFilter(self.menuButton, 1000))
-        self.menuButton.setToolTip(self.tr('Open Navigation'))
+        self.menuButton.setToolTip(self.tr("Open Navigation"))
 
-        self.setProperty('menu', False)
-        self.scrollWidget.setObjectName('scrollWidget')
+        self.setProperty("menu", False)
+        self.scrollWidget.setObjectName("scrollWidget")
         FluentStyleSheet.NAVIGATION_INTERFACE.apply(self)
         FluentStyleSheet.NAVIGATION_INTERFACE.apply(self.scrollWidget)
         self.__initLayout()
 
-    def __initLayout(self):
+    def __initLayout(self) -> None:
         self.vBoxLayout.setContentsMargins(0, 5, 0, 5)
         self.topLayout.setContentsMargins(4, 0, 4, 0)
         self.bottomLayout.setContentsMargins(4, 0, 4, 0)
@@ -154,15 +163,15 @@ class NavigationPanel(QFrame):
         self.vBoxLayout.addWidget(self.scrollArea, 1)
         self.vBoxLayout.addLayout(self.bottomLayout, 0)
 
-        self.vBoxLayout.setAlignment(Qt.AlignTop)
-        self.topLayout.setAlignment(Qt.AlignTop)
-        self.scrollLayout.setAlignment(Qt.AlignTop)
-        self.bottomLayout.setAlignment(Qt.AlignBottom)
+        self.vBoxLayout.setAlignment(Qt.AlignmentFlag.AlignTop)
+        self.topLayout.setAlignment(Qt.AlignmentFlag.AlignTop)
+        self.scrollLayout.setAlignment(Qt.AlignmentFlag.AlignTop)
+        self.bottomLayout.setAlignment(Qt.AlignmentFlag.AlignBottom)
 
-        self.topLayout.addWidget(self.returnButton, 0, Qt.AlignTop)
-        self.topLayout.addWidget(self.menuButton, 0, Qt.AlignTop)
+        self.topLayout.addWidget(self.returnButton, 0, Qt.AlignmentFlag.AlignTop)
+        self.topLayout.addWidget(self.menuButton, 0, Qt.AlignmentFlag.AlignTop)
 
-    def _updateAcrylicColor(self):
+    def _updateAcrylicColor(self) -> None:
         if isDarkTheme():
             tintColor = QColor(32, 32, 32, 200)
             luminosityColor = QColor(0, 0, 0, 0)
@@ -173,27 +182,37 @@ class NavigationPanel(QFrame):
         self.acrylicBrush.tintColor = tintColor
         self.acrylicBrush.luminosityColor = luminosityColor
 
-    def isIndicatorAnimationEnabled(self):
+    def isIndicatorAnimationEnabled(self) -> bool:
         return self._isIndicatorAnimationEnabled
 
-    def setIndicatorAnimationEnabled(self, isEnabled: bool):
+    def setIndicatorAnimationEnabled(self, isEnabled: bool) -> None:
         self._isIndicatorAnimationEnabled = isEnabled
 
-    def isUpdateIndicatorPosOnCollapseFinished(self):
+    def isUpdateIndicatorPosOnCollapseFinished(self) -> bool:
         return self._isUpdateIndicatorPosOnCollapseFinished
 
-    def setUpdateIndicatorPosOnCollapseFinished(self, update: bool):
+    def setUpdateIndicatorPosOnCollapseFinished(self, update: bool) -> None:
         self._isUpdateIndicatorPosOnCollapseFinished = update
 
-    def widget(self, routeKey: str):
+    def widget(self, routeKey: str) -> NavigationWidget:
         if routeKey not in self.items:
-            raise RouteKeyError(f"`{routeKey}` is illegal.")
+            msg = f"`{routeKey}` is illegal."
+            raise RouteKeyError(msg)
 
         return self.items[routeKey].widget
 
-    def addItem(self, routeKey: str, icon: Union[str, QIcon, FluentIconBase], text: str, onClick=None, selectable=True,
-                position=NavigationItemPosition.TOP, tooltip: str = None, parentRouteKey: str = None):
-        """ add navigation item
+    def addItem(
+        self,
+        routeKey: str,
+        icon: Union[str, QIcon, FluentIconBase],
+        text: str,
+        onClick: Optional[Callable] = None,
+        selectable: bool = True,
+        position: NavigationItemPosition = NavigationItemPosition.TOP,
+        tooltip: Optional[str] = None,
+        parentRouteKey: Optional[str] = None,
+    ) -> NavigationTreeWidget:
+        """add navigation item
 
         Parameters
         ----------
@@ -223,9 +242,16 @@ class NavigationPanel(QFrame):
         """
         return self.insertItem(-1, routeKey, icon, text, onClick, selectable, position, tooltip, parentRouteKey)
 
-    def addWidget(self, routeKey: str, widget: NavigationWidget, onClick=None, position=NavigationItemPosition.TOP,
-                  tooltip: str = None, parentRouteKey: str = None):
-        """ add custom widget
+    def addWidget(
+        self,
+        routeKey: str,
+        widget: NavigationWidget,
+        onClick: Optional[Callable] = None,
+        position: NavigationItemPosition = NavigationItemPosition.TOP,
+        tooltip: Optional[str] = None,
+        parentRouteKey: Optional[str] = None,
+    ) -> None:
+        """add custom widget
 
         Parameters
         ----------
@@ -249,9 +275,19 @@ class NavigationPanel(QFrame):
         """
         self.insertWidget(-1, routeKey, widget, onClick, position, tooltip, parentRouteKey)
 
-    def insertItem(self, index: int, routeKey: str, icon: Union[str, QIcon, FluentIconBase], text: str, onClick=None,
-                   selectable=True, position=NavigationItemPosition.TOP, tooltip: str = None, parentRouteKey=None):
-        """ insert navigation tree item
+    def insertItem(
+        self,
+        index: int,
+        routeKey: str,
+        icon: Union[str, QIcon, FluentIconBase],
+        text: str,
+        onClick: Optional[Callable] = None,
+        selectable: bool = True,
+        position: NavigationItemPosition = NavigationItemPosition.TOP,
+        tooltip: Optional[str] = None,
+        parentRouteKey: Optional[str] = None,
+    ) -> NavigationTreeWidget:
+        """insert navigation tree item
 
         Parameters
         ----------
@@ -289,9 +325,17 @@ class NavigationPanel(QFrame):
         self.insertWidget(index, routeKey, w, onClick, position, tooltip, parentRouteKey)
         return w
 
-    def insertWidget(self, index: int, routeKey: str, widget: NavigationWidget, onClick=None,
-                     position=NavigationItemPosition.TOP, tooltip: str = None, parentRouteKey: str = None):
-        """ insert custom widget
+    def insertWidget(
+        self,
+        index: int,
+        routeKey: str,
+        widget: NavigationWidget,
+        onClick: Optional[Callable] = None,
+        position: NavigationItemPosition = NavigationItemPosition.TOP,
+        tooltip: Optional[str] = None,
+        parentRouteKey: Optional[str] = None,
+    ) -> None:
+        """insert custom widget
 
         Parameters
         ----------
@@ -325,32 +369,36 @@ class NavigationPanel(QFrame):
         else:
             self._insertWidgetToLayout(index, widget, position)
 
-    def addSeparator(self, position=NavigationItemPosition.TOP):
-        """ add separator
+    def addSeparator(self, position: NavigationItemPosition = NavigationItemPosition.TOP) -> None:
+        """add separator
 
         Parameters
         ----------
-        position: NavigationPostion
+        position: NavigationItemPosition
             where to add the separator
         """
         self.insertSeparator(-1, position)
 
-    def insertSeparator(self, index: int, position=NavigationItemPosition.TOP):
-        """ add separator
+    def insertSeparator(self, index: int, position: NavigationItemPosition = NavigationItemPosition.TOP) -> None:
+        """add separator
 
         Parameters
         ----------
         index: int
             insert position
 
-        position: NavigationPostion
+        position: NavigationItemPosition
             where to add the separator
         """
         separator = NavigationSeparator(self)
         self._insertWidgetToLayout(index, separator, position)
 
-    def addItemHeader(self, text: str, position=NavigationItemPosition.TOP):
-        """ add item header
+    def addItemHeader(
+        self,
+        text: str,
+        position: NavigationItemPosition = NavigationItemPosition.TOP,
+    ) -> NavigationItemHeader:
+        """add item header
 
         Parameters
         ----------
@@ -367,8 +415,13 @@ class NavigationPanel(QFrame):
         """
         return self.insertItemHeader(-1, text, position)
 
-    def insertItemHeader(self, index: int, text: str, position=NavigationItemPosition.TOP):
-        """ insert item header
+    def insertItemHeader(
+        self,
+        index: int,
+        text: str,
+        position: NavigationItemPosition = NavigationItemPosition.TOP,
+    ) -> NavigationItemHeader:
+        """insert item header
 
         Parameters
         ----------
@@ -395,15 +448,22 @@ class NavigationPanel(QFrame):
 
         return header
 
-    def _registerWidget(self, routeKey: str, parentRouteKey: str, widget: NavigationWidget, onClick, tooltip: str):
-        """ register widget """
+    def _registerWidget(
+        self,
+        routeKey: str,
+        parentRouteKey: str,
+        widget: NavigationWidget,
+        onClick: Optional[Callable],
+        tooltip: str,
+    ) -> None:
+        """register widget"""
         widget.clicked.connect(self._onWidgetClicked)
 
         if onClick is not None:
             widget.clicked.connect(onClick)
 
-        widget.setProperty('routeKey', routeKey)
-        widget.setProperty('parentRouteKey', parentRouteKey)
+        widget.setProperty("routeKey", routeKey)
+        widget.setProperty("parentRouteKey", parentRouteKey)
         self.items[routeKey] = NavigationItem(routeKey, parentRouteKey, widget)
 
         if self.displayMode in [NavigationDisplayMode.EXPAND, NavigationDisplayMode.MENU]:
@@ -413,22 +473,22 @@ class NavigationPanel(QFrame):
             widget.setToolTip(tooltip)
             widget.installEventFilter(NavigationToolTipFilter(widget, 1000))
 
-    def _insertWidgetToLayout(self, index: int, widget: NavigationWidget, position: NavigationItemPosition):
-        """ insert widget to layout """
+    def _insertWidgetToLayout(self, index: int, widget: NavigationWidget, position: NavigationItemPosition) -> None:
+        """insert widget to layout"""
         if position == NavigationItemPosition.TOP:
             widget.setParent(self)
-            self.topLayout.insertWidget(index, widget, 0, Qt.AlignTop)
+            self.topLayout.insertWidget(index, widget, 0, Qt.AlignmentFlag.AlignTop)
         elif position == NavigationItemPosition.SCROLL:
             widget.setParent(self.scrollWidget)
-            self.scrollLayout.insertWidget(index, widget, 0, Qt.AlignTop)
+            self.scrollLayout.insertWidget(index, widget, 0, Qt.AlignmentFlag.AlignTop)
         else:
             widget.setParent(self)
-            self.bottomLayout.insertWidget(index, widget, 0, Qt.AlignBottom)
+            self.bottomLayout.insertWidget(index, widget, 0, Qt.AlignmentFlag.AlignBottom)
 
         widget.show()
 
-    def removeWidget(self, routeKey: str):
-        """ remove widget
+    def removeWidget(self, routeKey: str) -> None:
+        """remove widget
 
         Parameters
         ----------
@@ -447,8 +507,8 @@ class NavigationPanel(QFrame):
             self.widget(item.parentRouteKey).removeChild(item.widget)
 
         if isinstance(item.widget, NavigationTreeWidgetBase):
-            for child in item.widget.findChildren(NavigationWidget, options=Qt.FindChildrenRecursively):
-                key = child.property('routeKey')
+            for child in item.widget.findChildren(NavigationWidget, options=Qt.FindChildOption.FindChildrenRecursively):
+                key = child.property("routeKey")
                 if key is None:
                     continue
 
@@ -459,34 +519,34 @@ class NavigationPanel(QFrame):
         item.widget.deleteLater()
         self.history.remove(routeKey)
 
-    def setMenuButtonVisible(self, isVisible: bool):
-        """ set whether the menu button is visible """
+    def setMenuButtonVisible(self, isVisible: bool) -> None:
+        """set whether the menu button is visible"""
         self._isMenuButtonVisible = isVisible
         self.menuButton.setVisible(isVisible)
 
-    def setReturnButtonVisible(self, isVisible: bool):
-        """ set whether the return button is visible """
+    def setReturnButtonVisible(self, isVisible: bool) -> None:
+        """set whether the return button is visible"""
         self._isReturnButtonVisible = isVisible
         self.returnButton.setVisible(isVisible)
 
-    def setCollapsible(self, on: bool):
+    def setCollapsible(self, on: bool) -> None:
         self._isCollapsible = on
         if not on and self.displayMode != NavigationDisplayMode.EXPAND:
             self.expand(False)
 
-    def setExpandWidth(self, width: int):
-        """ set the maximum width """
+    def setExpandWidth(self, width: int) -> None:
+        """set the maximum width"""
         if width <= 42:
             return
 
         self.expandWidth = width
         NavigationWidget.EXPAND_WIDTH = width - 10
 
-    def setMinimumExpandWidth(self, width: int):
-        """ Set the minimum window width that allows panel to be expanded """
+    def setMinimumExpandWidth(self, width: int) -> None:
+        """Set the minimum window width that allows panel to be expanded"""
         self.minimumExpandWidth = width
 
-    def setAcrylicEnabled(self, isEnabled: bool):
+    def setAcrylicEnabled(self, isEnabled: bool) -> None:
         if isEnabled == self.isAcrylicEnabled():
             return
 
@@ -495,17 +555,17 @@ class NavigationPanel(QFrame):
         self.setStyle(QApplication.style())
         self.update()
 
-    def isAcrylicEnabled(self):
-        """ whether the acrylic effect is enabled """
+    def isAcrylicEnabled(self) -> bool:
+        """whether the acrylic effect is enabled"""
         return self._isAcrylicEnabled
 
-    def expand(self, useAni=True):
-        """ expand navigation panel """
+    def expand(self, useAni: bool = True) -> None:
+        """expand navigation panel"""
         self._stopIndicatorAnimation()
         self._setWidgetCompacted(False)
         self._restoreTreeExpandState(useAni)
-        self.expandAni.setProperty('expand', True)
-        self.menuButton.setToolTip(self.tr('Close Navigation'))
+        self.expandAni.setProperty("expand", True)
+        self.menuButton.setToolTip(self.tr("Close Navigation"))
 
         # determine the display mode according to the width of window
         # https://learn.microsoft.com/en-us/windows/apps/design/controls/navigationview#default
@@ -513,14 +573,13 @@ class NavigationPanel(QFrame):
         if (self.window().width() >= expandWidth and not self.isMinimalEnabled) or not self._isCollapsible:
             self.displayMode = NavigationDisplayMode.EXPAND
         else:
-            self.setProperty('menu', True)
+            self.setProperty("menu", True)
             self.setStyle(QApplication.style())
             self.displayMode = NavigationDisplayMode.MENU
 
             # grab acrylic image
             if self._canDrawAcrylic():
-                self.acrylicBrush.grabImage(
-                    QRect(self.mapToGlobal(QPoint()), QSize(self.expandWidth, self.height())))
+                self.acrylicBrush.grabImage(QRect(self.mapToGlobal(QPoint()), QSize(self.expandWidth, self.height())))
 
             if not self._parent.isWindow():
                 pos = self.parent().pos()
@@ -531,22 +590,20 @@ class NavigationPanel(QFrame):
 
         if useAni:
             self.displayModeChanged.emit(self.displayMode)
-            self.expandAni.setStartValue(
-                QRect(self.pos(), QSize(48, self.height())))
-            self.expandAni.setEndValue(
-                QRect(self.pos(), QSize(self.expandWidth, self.height())))
+            self.expandAni.setStartValue(QRect(self.pos(), QSize(48, self.height())))
+            self.expandAni.setEndValue(QRect(self.pos(), QSize(self.expandWidth, self.height())))
             self.expandAni.start()
         else:
             self.resize(self.expandWidth, self.height())
             self._onExpandAniFinished()
 
-    def collapse(self):
-        """ collapse navigation panel """
+    def collapse(self) -> None:
+        """collapse navigation panel"""
         # stop animation if current selected item is not root node
-        if self.currentItem() and self.currentItem().property('parentRouteKey'):
+        if self.currentItem() and self.currentItem().property("parentRouteKey"):
             self._stopIndicatorAnimation()
 
-        if self.expandAni.state() == QPropertyAnimation.Running:
+        if self.expandAni.state() == QPropertyAnimation.State.Running:
             return
 
         for item in self.items.values():
@@ -555,34 +612,32 @@ class NavigationPanel(QFrame):
                 w.saveExpandState()
                 w.setExpanded(False)
 
-        self.expandAni.setStartValue(
-            QRect(self.pos(), QSize(self.width(), self.height())))
-        self.expandAni.setEndValue(
-            QRect(self.pos(), QSize(48, self.height())))
-        self.expandAni.setProperty('expand', False)
+        self.expandAni.setStartValue(QRect(self.pos(), QSize(self.width(), self.height())))
+        self.expandAni.setEndValue(QRect(self.pos(), QSize(48, self.height())))
+        self.expandAni.setProperty("expand", False)
         self.expandAni.start()
 
-        self.menuButton.setToolTip(self.tr('Open Navigation'))
+        self.menuButton.setToolTip(self.tr("Open Navigation"))
 
-    def _stopIndicatorAnimation(self):
+    def _stopIndicatorAnimation(self) -> None:
         self.indicator.stopAnimation()
         self._onIndicatorAniFinished()
 
-    def _restoreTreeExpandState(self, useAni=True):
+    def _restoreTreeExpandState(self, useAni: bool = True) -> None:
         for item in self.items.values():
             w = item.widget
             if isinstance(w, NavigationTreeWidgetBase) and w.isRoot():
                 w.restoreExpandState(useAni)
 
-    def toggle(self):
-        """ toggle navigation panel """
+    def toggle(self) -> None:
+        """toggle navigation panel"""
         if self.displayMode in [NavigationDisplayMode.COMPACT, NavigationDisplayMode.MINIMAL]:
             self.expand()
         else:
             self.collapse()
 
-    def setCurrentItem(self, routeKey: str):
-        """ set current selected item
+    def setCurrentItem(self, routeKey: str) -> None:
+        """set current selected item
 
         Parameters
         ----------
@@ -618,10 +673,10 @@ class NavigationPanel(QFrame):
         self.indicator.setIndicatorColor(newItem.lightIndicatorColor, newItem.darkIndicatorColor)
         self.indicator.startAnimation(preIndicatorRect, newIndicatorRect)
 
-    def currentItem(self):
+    def currentItem(self) -> Optional[NavigationWidget]:
         return self.widget(self._currentRouteKey) if self._currentRouteKey else None
 
-    def _findIndicatorItem(self, item: NavigationWidget):
+    def _findIndicatorItem(self, item: NavigationWidget) -> Optional[NavigationWidget]:
         parent = item
         while parent:
             if isinstance(parent, NavigationWidget) and parent.isVisible():
@@ -631,7 +686,7 @@ class NavigationPanel(QFrame):
 
         return parent
 
-    def _getIndicatorRect(self, item: NavigationWidget):
+    def _getIndicatorRect(self, item: NavigationWidget) -> QRect:
         if not item:
             return QRect()
 
@@ -639,25 +694,26 @@ class NavigationPanel(QFrame):
         rect = item.indicatorRect()
         return rect.translated(pos)
 
-    def _onIndicatorAniFinished(self):
+    def _onIndicatorAniFinished(self) -> None:
         item = self.currentItem()
         if not item:
             return
 
         item.setSelected(True)
-        
+
         indicatorItem = self._findIndicatorItem(item)
         if indicatorItem:
             indicatorItem.setAboutSelected(False)
 
         self.indicator.hide()
 
-    def _onWidgetClicked(self):
-        widget = self.sender()  # type: NavigationWidget
+    def _onWidgetClicked(self) -> None:
+        widget: NavigationWidget = self.sender()
         if not widget.isSelectable:
-            return self._showFlyoutNavigationMenu(widget)
+            self._showFlyoutNavigationMenu(widget)
+            return
 
-        self.setCurrentItem(widget.property('routeKey'))
+        self.setCurrentItem(widget.property("routeKey"))
 
         isLeaf = not isinstance(widget, NavigationTreeWidgetBase) or widget.isLeaf()
         if self.displayMode == NavigationDisplayMode.MENU and isLeaf:
@@ -665,8 +721,8 @@ class NavigationPanel(QFrame):
         elif self.isCollapsed():
             self._showFlyoutNavigationMenu(widget)
 
-    def _showFlyoutNavigationMenu(self, widget: NavigationTreeWidget):
-        """ show flyout navigation menu """
+    def _showFlyoutNavigationMenu(self, widget: NavigationTreeWidget) -> None:
+        """show flyout navigation menu"""
         if not (self.isCollapsed() and isinstance(widget, NavigationTreeWidget)):
             return
 
@@ -689,14 +745,14 @@ class NavigationPanel(QFrame):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(menu)
 
-        # execuse flyout animation
+        # execute flyout animation
         flyout.resize(flyout.sizeHint())
         pos = SlideRightFlyoutAnimationManager(flyout).position(widget)
         flyout.exec(pos, FlyoutAnimationType.SLIDE_RIGHT)
 
         menu.expanded.connect(lambda: self._adjustFlyoutMenuSize(flyout, widget, menu))
 
-    def _adjustFlyoutMenuSize(self, flyout: Flyout, widget: NavigationTreeWidget, menu: NavigationFlyoutMenu):
+    def _adjustFlyoutMenuSize(self, flyout: Flyout, widget: NavigationTreeWidget, menu: NavigationFlyoutMenu) -> None:
         flyout.view.setFixedSize(menu.size())
         flyout.setFixedSize(flyout.layout().sizeHint())
 
@@ -709,28 +765,31 @@ class NavigationPanel(QFrame):
         y = max(rect.top() + 42, min(pos.y() - 4, rect.bottom() - h + 5))
         flyout.move(x, y)
 
-    def isCollapsed(self):
+    def isCollapsed(self) -> bool:
         return self.displayMode == NavigationDisplayMode.COMPACT
 
-    def eventFilter(self, obj, e: QEvent):
+    def eventFilter(self, obj, e: QEvent) -> bool:
         if obj is not self.window() or not self._isCollapsible:
             return super().eventFilter(obj, e)
 
-        if e.type() == QEvent.MouseButtonRelease:
+        if e.type() == QEvent.Type.MouseButtonRelease:
             if not self.geometry().contains(e.pos()) and self.displayMode == NavigationDisplayMode.MENU:
                 self.collapse()
-        elif e.type() == QEvent.Resize:
+        elif e.type() == QEvent.Type.Resize:
             w = QResizeEvent(e).size().width()
             if w < self.minimumExpandWidth and self.displayMode == NavigationDisplayMode.EXPAND:
                 self.collapse()
-            elif w >= self.minimumExpandWidth and self.displayMode == NavigationDisplayMode.COMPACT and \
-                    not self._isMenuButtonVisible:
+            elif (
+                w >= self.minimumExpandWidth
+                and self.displayMode == NavigationDisplayMode.COMPACT
+                and not self._isMenuButtonVisible
+            ):
                 self.expand()
 
         return super().eventFilter(obj, e)
 
-    def _onExpandAniFinished(self):
-        if not self.expandAni.property('expand'):
+    def _onExpandAniFinished(self) -> None:
+        if not self.expandAni.property("expand"):
             if self.isMinimalEnabled:
                 self.displayMode = NavigationDisplayMode.MINIMAL
             else:
@@ -740,10 +799,10 @@ class NavigationPanel(QFrame):
 
         if self.displayMode == NavigationDisplayMode.MINIMAL:
             self.hide()
-            self.setProperty('menu', False)
+            self.setProperty("menu", False)
             self.setStyle(QApplication.style())
         elif self.displayMode == NavigationDisplayMode.COMPACT:
-            self.setProperty('menu', False)
+            self.setProperty("menu", False)
             self.setStyle(QApplication.style())
 
             self._setWidgetCompacted(True)
@@ -756,12 +815,12 @@ class NavigationPanel(QFrame):
                 self.move(0, 0)
                 self.show()
 
-    def _setWidgetCompacted(self, isCompacted: bool):
-        """ set whether the navigation widget is compacted """
+    def _setWidgetCompacted(self, isCompacted: bool) -> None:
+        """set whether the navigation widget is compacted"""
         for item in self.findChildren(NavigationWidget):
             item.setCompacted(isCompacted)
 
-    def layoutMinHeight(self):
+    def layoutMinHeight(self) -> int:
         th = self.topLayout.minimumSize().height()
         bh = self.bottomLayout.minimumSize().height()
         sh = sum(w.height() for w in self.findChildren(NavigationSeparator))
@@ -769,15 +828,15 @@ class NavigationPanel(QFrame):
         spacing += self.bottomLayout.count() * self.bottomLayout.spacing()
         return 36 + th + bh + sh + spacing
 
-    def _canDrawAcrylic(self):
+    def _canDrawAcrylic(self) -> bool:
         return self.acrylicBrush.isAvailable() and self.isAcrylicEnabled()
 
-    def paintEvent(self, e):
+    def paintEvent(self, e: QPaintEvent) -> None:
         if not self._canDrawAcrylic() or self.displayMode != NavigationDisplayMode.MENU:
-            return super().paintEvent(e)
+            super().paintEvent(e)
 
         path = QPainterPath()
-        path.setFillRule(Qt.WindingFill)
+        path.setFillRule(Qt.FillRule.WindingFill)
         path.addRoundedRect(0, 1, self.width() - 1, self.height() - 1, 7, 7)
         path.addRect(0, 1, 8, self.height() - 1)
         self.acrylicBrush.setClipPath(path)
@@ -788,15 +847,13 @@ class NavigationPanel(QFrame):
         super().paintEvent(e)
 
 
-
 class NavigationItemLayout(QVBoxLayout):
-    """ Navigation layout """
+    """Navigation layout"""
 
-    def setGeometry(self, rect: QRect):
+    def setGeometry(self, rect: QRect) -> None:
         super().setGeometry(rect)
         for i in range(self.count()):
             item = self.itemAt(i)
             if isinstance(item.widget(), NavigationSeparator):
                 geo = item.geometry()
                 item.widget().setGeometry(0, geo.y(), geo.width(), geo.height())
-

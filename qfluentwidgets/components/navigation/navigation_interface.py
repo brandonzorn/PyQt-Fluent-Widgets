@@ -1,28 +1,29 @@
-# coding:utf-8
-from typing import Union
+from typing import Optional, Union
 
-from PyQt5.QtCore import Qt, QEvent, pyqtSignal
-from PyQt5.QtGui import QResizeEvent, QIcon, QPixmap
+from PyQt5.QtCore import pyqtSignal, QEvent, Qt
+from PyQt5.QtGui import QIcon, QResizeEvent
 from PyQt5.QtWidgets import QWidget
 
-from .navigation_panel import NavigationPanel, NavigationItemPosition, NavigationWidget, NavigationDisplayMode
-from .navigation_widget import NavigationTreeWidget, NavigationUserCard
-from ...common.style_sheet import FluentStyleSheet
 from ...common.icon import FluentIconBase
+from .navigation_panel import NavigationDisplayMode, NavigationItemPosition, NavigationPanel, NavigationWidget
+from .navigation_widget import NavigationItemHeader, NavigationTreeWidget, NavigationUserCard
 
 
 class NavigationInterface(QWidget):
-    """ Navigation interface """
+    """Navigation interface"""
 
     displayModeChanged = pyqtSignal(NavigationDisplayMode)
 
-    def __init__(self, parent=None, showMenuButton=True, showReturnButton=False, collapsible=True):
+    def __init__(
+        self,
+        parent: Optional[QWidget] = None,
+        showMenuButton: bool = True,
+        showReturnButton: bool = False,
+        collapsible: bool = True,
+    ) -> None:
         """
         Parameters
         ----------
-        parent: widget
-            parent widget
-
         showMenuButton: bool
             whether to show menu button
 
@@ -42,16 +43,24 @@ class NavigationInterface(QWidget):
 
         self.resize(48, self.height())
         self.setMinimumWidth(48)
-        self.setAttribute(Qt.WA_TranslucentBackground)
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
 
-    def addItem(self, routeKey: str, icon: Union[str, QIcon, FluentIconBase], text: str, onClick=None,
-                selectable=True, position=NavigationItemPosition.TOP, tooltip: str = None,
-                parentRouteKey: str = None) -> NavigationTreeWidget:
-        """ add navigation item
+    def addItem(
+        self,
+        routeKey: str,
+        icon: Union[str, QIcon, FluentIconBase],
+        text: str,
+        onClick=None,
+        selectable: bool = True,
+        position: NavigationItemPosition = NavigationItemPosition.TOP,
+        tooltip: Optional[str] = None,
+        parentRouteKey: Optional[str] = None,
+    ) -> NavigationTreeWidget:
+        """add navigation item
 
         Parameters
         ----------
-        routKey: str
+        routeKey: str
             the unique name of item
 
         icon: str | QIcon | FluentIconBase
@@ -69,21 +78,28 @@ class NavigationInterface(QWidget):
         position: NavigationItemPosition
             where the button is added
 
-        tooltip: str
+        tooltip: Optional[str]
             the tooltip of item
 
-        parentRouteKey: str
+        parentRouteKey: Optional[str]
             the route key of parent item, the parent item should be `NavigationTreeWidgetBase`
         """
         return self.insertItem(-1, routeKey, icon, text, onClick, selectable, position, tooltip, parentRouteKey)
 
-    def addWidget(self, routeKey: str, widget: NavigationWidget, onClick=None, position=NavigationItemPosition.TOP,
-                  tooltip: str = None, parentRouteKey: str = None):
-        """ add custom widget
+    def addWidget(
+        self,
+        routeKey: str,
+        widget: NavigationWidget,
+        onClick=None,
+        position: NavigationItemPosition = NavigationItemPosition.TOP,
+        tooltip: Optional[str] = None,
+        parentRouteKey: Optional[str] = None,
+    ) -> None:
+        """add custom widget
 
         Parameters
         ----------
-        routKey: str
+        routeKey: str
             the unique name of item
 
         widget: NavigationWidget
@@ -103,17 +119,26 @@ class NavigationInterface(QWidget):
         """
         self.insertWidget(-1, routeKey, widget, onClick, position, tooltip, parentRouteKey)
 
-    def insertItem(self, index: int, routeKey: str, icon: Union[str, QIcon, FluentIconBase], text: str,
-                   onClick=None, selectable=True, position=NavigationItemPosition.TOP, tooltip: str = None,
-                   parentRouteKey: str = None) -> NavigationTreeWidget:
-        """ insert navigation item
+    def insertItem(
+        self,
+        index: int,
+        routeKey: str,
+        icon: Union[str, QIcon, FluentIconBase],
+        text: str,
+        onClick=None,
+        selectable: bool = True,
+        position: NavigationItemPosition = NavigationItemPosition.TOP,
+        tooltip: Optional[str] = None,
+        parentRouteKey: Optional[str] = None,
+    ) -> NavigationTreeWidget:
+        """insert navigation item
 
         Parameters
         ----------
         index: int
             insert position
 
-        routKey: str
+        routeKey: str
             the unique name of item
 
         icon: str | QIcon | FluentIconBase
@@ -141,16 +166,24 @@ class NavigationInterface(QWidget):
         self.setMinimumHeight(self.panel.layoutMinHeight())
         return w
 
-    def insertWidget(self, index: int, routeKey: str, widget: NavigationWidget, onClick=None,
-                     position=NavigationItemPosition.TOP, tooltip: str = None, parentRouteKey: str = None):
-        """ insert custom widget
+    def insertWidget(
+        self,
+        index: int,
+        routeKey: str,
+        widget: NavigationWidget,
+        onClick=None,
+        position: NavigationItemPosition = NavigationItemPosition.TOP,
+        tooltip: Optional[str] = None,
+        parentRouteKey: Optional[str] = None,
+    ) -> None:
+        """insert custom widget
 
         Parameters
         ----------
         index: int
             insert position
 
-        routKey: str
+        routeKey: str
             the unique name of item
 
         widget: NavigationWidget
@@ -171,18 +204,22 @@ class NavigationInterface(QWidget):
         self.panel.insertWidget(index, routeKey, widget, onClick, position, tooltip, parentRouteKey)
         self.setMinimumHeight(self.panel.layoutMinHeight())
 
-    def addSeparator(self, position=NavigationItemPosition.TOP):
-        """ add separator
+    def addSeparator(self, position: NavigationItemPosition = NavigationItemPosition.TOP) -> None:
+        """add separator
 
         Parameters
         ----------
-        position: NavigationPostion
+        position: NavigationItemPosition
             where to add the separator
         """
         self.insertSeparator(-1, position)
 
-    def addItemHeader(self, text: str, position=NavigationItemPosition.TOP):
-        """ add item header for grouping navigation items
+    def addItemHeader(
+        self,
+        text: str,
+        position: NavigationItemPosition = NavigationItemPosition.TOP,
+    ) -> NavigationItemHeader:
+        """add item header for grouping navigation items
 
         Parameters
         ----------
@@ -199,8 +236,13 @@ class NavigationInterface(QWidget):
         """
         return self.panel.addItemHeader(text, position)
 
-    def insertItemHeader(self, index: int, text: str, position=NavigationItemPosition.TOP):
-        """ insert item header for grouping navigation items
+    def insertItemHeader(
+        self,
+        index: int,
+        text: str,
+        position: NavigationItemPosition = NavigationItemPosition.TOP,
+    ) -> NavigationItemHeader:
+        """insert item header for grouping navigation items
 
         Parameters
         ----------
@@ -220,10 +262,17 @@ class NavigationInterface(QWidget):
         """
         return self.panel.insertItemHeader(index, text, position)
 
-    def addUserCard(self, routeKey: str, avatar: Union[str, QIcon, FluentIconBase] = None,
-                    title: str = '', subtitle: str = '', onClick=None,
-                    position=NavigationItemPosition.TOP, aboveMenuButton: bool = False):
-        """ add user card to navigation panel
+    def addUserCard(
+        self,
+        routeKey: str,
+        avatar: Optional[Union[str, QIcon, FluentIconBase]] = None,
+        title: str = "",
+        subtitle: str = "",
+        onClick=None,
+        position: NavigationItemPosition = NavigationItemPosition.TOP,
+        aboveMenuButton: bool = False,
+    ) -> NavigationUserCard:
+        """add user card to navigation panel
 
         Parameters
         ----------
@@ -234,7 +283,7 @@ class NavigationInterface(QWidget):
             avatar image or icon
 
         title: str
-            user name or title text
+            username or title text
 
         subtitle: str
             subtitle text (e.g., email, status)
@@ -282,32 +331,32 @@ class NavigationInterface(QWidget):
 
         return card
 
-    def insertSeparator(self, index: int, position=NavigationItemPosition.TOP):
-        """ add separator
+    def insertSeparator(self, index: int, position: NavigationItemPosition = NavigationItemPosition.TOP) -> None:
+        """add separator
 
         Parameters
         ----------
         index: int
             insert position
 
-        position: NavigationPostion
+        position: NavigationItemPosition
             where to add the separator
         """
         self.panel.insertSeparator(index, position)
         self.setMinimumHeight(self.panel.layoutMinHeight())
 
-    def removeWidget(self, routeKey: str):
-        """ remove widget
+    def removeWidget(self, routeKey: str) -> None:
+        """remove widget
 
         Parameters
         ----------
-        routKey: str
+        routeKey: str
             the unique name of item
         """
         self.panel.removeWidget(routeKey)
 
-    def setCurrentItem(self, name: str):
-        """ set current selected item
+    def setCurrentItem(self, name: str) -> None:
+        """set current selected item
 
         Parameters
         ----------
@@ -316,59 +365,59 @@ class NavigationInterface(QWidget):
         """
         self.panel.setCurrentItem(name)
 
-    def expand(self, useAni=True):
-        """ expand navigation panel """
+    def expand(self, useAni: bool = True) -> None:
+        """expand navigation panel"""
         self.panel.expand(useAni)
 
-    def toggle(self):
-        """ toggle navigation panel """
+    def toggle(self) -> None:
+        """toggle navigation panel"""
         self.panel.toggle()
 
-    def setExpandWidth(self, width: int):
-        """ set the maximum width """
+    def setExpandWidth(self, width: int) -> None:
+        """set the maximum width"""
         self.panel.setExpandWidth(width)
 
-    def setMinimumExpandWidth(self, width: int):
-        """ Set the minimum window width that allows panel to be expanded """
+    def setMinimumExpandWidth(self, width: int) -> None:
+        """Set the minimum window width that allows panel to be expanded"""
         self.panel.setMinimumExpandWidth(width)
 
-    def setMenuButtonVisible(self, isVisible: bool):
-        """ set whether the menu button is visible """
+    def setMenuButtonVisible(self, isVisible: bool) -> None:
+        """set whether the menu button is visible"""
         self.panel.setMenuButtonVisible(isVisible)
 
-    def setReturnButtonVisible(self, isVisible: bool):
-        """ set whether the return button is visible """
+    def setReturnButtonVisible(self, isVisible: bool) -> None:
+        """set whether the return button is visible"""
         self.panel.setReturnButtonVisible(isVisible)
 
-    def setCollapsible(self, collapsible: bool):
+    def setCollapsible(self, collapsible: bool) -> None:
         self.panel.setCollapsible(collapsible)
 
-    def isAcrylicEnabled(self):
+    def isAcrylicEnabled(self) -> int:
         return self.panel.isAcrylicEnabled()
 
-    def setAcrylicEnabled(self, isEnabled: bool):
-        """ set whether the acrylic background effect is enabled """
+    def setAcrylicEnabled(self, isEnabled: bool) -> None:
+        """set whether the acrylic background effect is enabled"""
         self.panel.setAcrylicEnabled(isEnabled)
 
-    def isIndicatorAnimationEnabled(self):
+    def isIndicatorAnimationEnabled(self) -> bool:
         return self.panel.isIndicatorAnimationEnabled()
 
-    def setIndicatorAnimationEnabled(self, isEnabled: bool):
-        """ set whether the indicator sliding animation is enabled """
+    def setIndicatorAnimationEnabled(self, isEnabled: bool) -> None:
+        """set whether the indicator sliding animation is enabled"""
         self.panel.setIndicatorAnimationEnabled(isEnabled)
 
-    def isUpdateIndicatorPosOnCollapseFinished(self):
+    def isUpdateIndicatorPosOnCollapseFinished(self) -> bool:
         return self.panel.isUpdateIndicatorPosOnCollapseFinished()
 
-    def setUpdateIndicatorPosOnCollapseFinished(self, update: bool):
-        """ set whether to update indicator position when collapese finished """
+    def setUpdateIndicatorPosOnCollapseFinished(self, update: bool) -> None:
+        """set whether to update indicator position when collapse finished"""
         self.panel.setUpdateIndicatorPosOnCollapseFinished(update)
 
-    def widget(self, routeKey: str):
+    def widget(self, routeKey: str) -> NavigationWidget:
         return self.panel.widget(routeKey)
 
-    def eventFilter(self, obj, e: QEvent):
-        if obj is not self.panel or e.type() != QEvent.Resize:
+    def eventFilter(self, obj, e: QEvent) -> bool:
+        if obj is not self.panel or e.type() != QEvent.Type.Resize:
             return super().eventFilter(obj, e)
 
         if self.panel.displayMode != NavigationDisplayMode.MENU:
@@ -378,6 +427,6 @@ class NavigationInterface(QWidget):
 
         return super().eventFilter(obj, e)
 
-    def resizeEvent(self, e: QResizeEvent):
+    def resizeEvent(self, e: QResizeEvent) -> None:
         if e.oldSize().height() != self.height():
             self.panel.setFixedHeight(self.height())
